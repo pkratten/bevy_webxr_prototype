@@ -1,0 +1,62 @@
+[package]
+name = "bevy_webxr"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[workspace]
+exclude = ["crates/*"]
+
+[dependencies]
+bevy = "0.12.0"
+futures = "0.3.28"
+js-sys = "0.3.64"
+thiserror = "1.0.50"
+wasm-bindgen = "0.2.87"
+wasm-bindgen-futures = "0.4.37"
+web-sys = { version = "0.3.60", features = [
+    "Window",
+    "Navigator",
+    "XrBoundedReferenceSpace",
+    "XrEye",
+    "XrFrame",
+    "XrHandedness",
+    "XrInputSource",
+    "XrInputSourceArray",
+    "XrInputSourceEvent",
+    "XrInputSourceEventInit",
+    "XrInputSourcesChangeEvent",
+    "XrInputSourcesChangeEventInit",
+    "XrPose",
+    "XrReferenceSpace",
+    "XrReferenceSpaceEvent",
+    "XrReferenceSpaceEventInit",
+    "XrReferenceSpaceType",
+    "XrRenderState",
+    "XrRenderStateInit",
+    "XrRigidTransform",
+    "XrSession",
+    "XrSessionEvent",
+    "XrSessionEventInit",
+    "XrSessionInit",
+    "XrSessionMode",
+    "XrSpace",
+    "XrSystem",
+    "XrTargetRayMode",
+    "XrView",
+    "XrViewerPose",
+    "XrViewport",
+    "XrVisibilityState",
+    "XrWebGlLayer",
+    "XrWebGlLayerInit",
+    "HtmlButtonElement",
+] }
+wgpu = "0.18.0"
+wgpu-hal = "0.18.0"
+winit = "0.29.3"
+
+
+[[example]]
+name = "webxr_example"
+path = "examples/webxr_example.rs"
