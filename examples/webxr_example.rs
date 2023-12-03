@@ -6,7 +6,7 @@ use bevy_webxr::WebXrPlugin;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(WebXrPlugin {})
+        .add_plugins(WebXrPlugin::default())
         .add_systems(Startup, setup)
         .run();
 }

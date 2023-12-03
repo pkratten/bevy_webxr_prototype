@@ -2,20 +2,33 @@ use bevy::prelude::*;
 use bevy::tasks::AsyncComputeTaskPool;
 use error::WebXrError;
 use std::cell::{RefCell, UnsafeCell};
+use std::default;
 use std::rc::Rc;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsCast;
 use web_sys::{WebGl2RenderingContext, XrSession};
 
 pub mod error;
+mod graphics;
 mod init;
 
 #[derive(Clone)]
 struct WebXrSettings {
-    vr_supported: bool,
-    ar_supported: bool,
+    pub vr_supported: bool,
+    pub ar_supported: bool,
     pub vr_button: String,
     pub ar_button: String,
+}
+
+impl Default for WebXrSettings {
+    fn default() -> WebXrSettings {
+        WebXrSettings {
+            vr_supported: true,
+            ar_supported: true,
+            vr_button: "vr_button".to_string(),
+            ar_button: "ar_button".to_string(),
+        }
+    }
 }
 
 struct WebXrContext {
@@ -25,7 +38,7 @@ struct WebXrContext {
     pub initialized: bool,
 }
 
-impl WebXrContext {
+impl Default for WebXrContext {
     fn default() -> WebXrContext {
         WebXrContext {
             session: RefCell::new(None),
@@ -37,10 +50,11 @@ impl WebXrContext {
 }
 
 #[derive(Event, Default)]
-struct XrSessionRequestedEvent {}
+pub struct XrSessionRequestedEvent {}
 
 struct AppPointer(*mut App);
 
+#[derive(Default)]
 pub struct WebXrPlugin {
     settings: WebXrSettings,
 }
@@ -60,6 +74,11 @@ impl Plugin for WebXrPlugin {
         app.add_event::<XrSessionRequestedEvent>();
 
         app.add_systems(PreUpdate, on_xr_session_requested);
+
+        app.add_systems(
+            PreUpdate,
+            graphics::spawn_webxr_camera.run_if(on_event::<XrSessionRequestedEvent>()),
+        );
     }
 }
 
@@ -67,6 +86,7 @@ fn on_xr_session_requested(
     mut context: NonSendMut<WebXrContext>,
     mut event_writer: EventWriter<XrSessionRequestedEvent>,
     pointer: NonSend<AppPointer>,
+    mut commands: Commands,
 ) {
     if !context.initialized {
         if let Some(Ok(session)) = &*context.session.clone().borrow() {
