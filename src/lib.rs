@@ -2,7 +2,6 @@ use bevy::prelude::*;
 use bevy::tasks::AsyncComputeTaskPool;
 use error::WebXrError;
 use std::cell::{RefCell, UnsafeCell};
-use std::default;
 use std::rc::Rc;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsCast;
@@ -32,8 +31,8 @@ impl Default for WebXrSettings {
 }
 
 struct WebXrContext {
-    pub session: RefCell<Option<Result<XrSession, WebXrError>>>,
-    pub render_context: RefCell<Option<Result<WebGl2RenderingContext, WebXrError>>>,
+    pub session: Rc<RefCell<Option<Result<XrSession, WebXrError>>>>,
+    pub render_context: Rc<RefCell<Option<Result<WebGl2RenderingContext, WebXrError>>>>,
     pub render_state: RefCell<Result<(), WebXrError>>,
     pub initialized: bool,
 }
@@ -41,8 +40,8 @@ struct WebXrContext {
 impl Default for WebXrContext {
     fn default() -> WebXrContext {
         WebXrContext {
-            session: RefCell::new(None),
-            render_context: RefCell::new(None),
+            session: Rc::new(RefCell::new(None)),
+            render_context: Rc::new(RefCell::new(None)),
             render_state: RefCell::new(Ok(())),
             initialized: false,
         }
@@ -91,14 +90,18 @@ fn on_xr_session_requested(
     if !context.initialized {
         if let Some(Ok(session)) = &*context.session.clone().borrow() {
             if let Some(Ok(render_context)) = &*context.render_context.clone().borrow() {
+                info!("Got session!");
                 context.initialized = true;
-                event_writer.send_default();
                 context.render_state.replace(request_web_xr_frame(
                     session,
                     render_context,
                     pointer,
                 ));
+
+                event_writer.send_default();
             }
+        } else {
+            info!("{:?}", context.session);
         }
     }
 }
@@ -109,6 +112,7 @@ fn request_web_xr_frame(
     pointer: NonSend<'_, AppPointer>,
 ) -> Result<(), WebXrError> {
     trace!("Setting up WebXr render context...");
+    info!("{:?}", render_context);
     let web_gl_layer =
         web_sys::XrWebGlLayer::new_with_web_gl2_rendering_context(session, render_context)
             .map_err(|err| WebXrError::JsError(err))?;
@@ -167,8 +171,6 @@ fn request_web_xr_frame(
 }
 
 fn webxr_runner(app: App) {
-    //get winit canvas and make xr compatible.
-
     let unsafe_app = UnsafeCell::new(app);
     let pointer = unsafe_app.get();
 
@@ -176,7 +178,7 @@ fn webxr_runner(app: App) {
         let mut app = unsafe_app.get().read();
         app.insert_non_send_resource(AppPointer(pointer));
 
-        trace!("starting winit_runner");
+        info!("starting winit_runner");
         bevy::winit::winit_runner(app);
     }
 }

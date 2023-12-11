@@ -1,36 +1,34 @@
 use crate::{error::WebXrError, WebXrContext, WebXrSettings};
 use bevy::{prelude::*, tasks::AsyncComputeTaskPool};
-use std::cell::RefCell;
+use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{prelude::Closure, JsCast};
-use web_sys::{EventTarget, WebGl2RenderingContext, XrSession, XrSessionMode};
+use web_sys::{EventTarget, HtmlButtonElement, WebGl2RenderingContext, XrSession, XrSessionMode};
 
 pub(crate) async fn initialize_webxr(
     settings: WebXrSettings,
     canvas: &str,
-    session_ref: RefCell<Option<Result<XrSession, WebXrError>>>,
-    render_context_ref: RefCell<Option<Result<WebGl2RenderingContext, WebXrError>>>,
-) -> Result<WebXrContext, WebXrError> {
+    session_ref: Rc<RefCell<Option<Result<XrSession, WebXrError>>>>,
+    render_context_ref: Rc<RefCell<Option<Result<WebGl2RenderingContext, WebXrError>>>>,
+) {
     if !settings.vr_supported & !settings.ar_supported {
         warn!("WebXR VR and AR are disabled!");
+    };
+
+    let supported_sessions = get_supported_sessions().await;
+
+    if let Ok(supported_session) = get_supported_sessions().await {
+        let context = get_gl_context(canvas).await;
+        render_context_ref.replace(Some(context));
+
+        if supported_session.vr {
+            initialize_button(&settings.vr_button, ButtonType::VR, session_ref.clone())
+        };
+        if supported_session.ar {
+            initialize_button(&settings.ar_button, ButtonType::AR, session_ref.clone())
+        };
+    } else {
+        error!("WebXR not supported!");
     }
-
-    let supported_sessions = get_supported_sessions().await?;
-
-    if !supported_sessions.any() {
-        return Err(WebXrError::NotSupported);
-    }
-
-    let context = get_gl_context(canvas).await;
-    render_context_ref.replace(Some(context));
-
-    if settings.vr_supported {
-        initialize_button(&settings.vr_button, ButtonType::VR, session_ref.clone())
-    }
-    if settings.ar_supported {
-        initialize_button(&settings.ar_button, ButtonType::AR, session_ref.clone())
-    }
-
-    todo!()
 }
 
 struct SupportedSessions {
@@ -39,11 +37,11 @@ struct SupportedSessions {
     ar: bool,
 }
 
-impl SupportedSessions {
-    pub fn any(self) -> bool {
-        self.inline | self.vr | self.ar
-    }
-}
+// impl SupportedSessions {
+//     pub fn any(self) -> bool {
+//         self.inline | self.vr | self.ar
+//     }
+// }
 
 async fn get_supported_sessions() -> Result<SupportedSessions, WebXrError> {
     let xr = web_sys::window().unwrap().navigator().xr();
@@ -104,7 +102,7 @@ enum ButtonType {
 fn initialize_button(
     selector: &str,
     button_type: ButtonType,
-    session_ref: RefCell<Option<Result<XrSession, WebXrError>>>,
+    session_ref: Rc<RefCell<Option<Result<XrSession, WebXrError>>>>,
 ) {
     let document = web_sys::window().unwrap().document().unwrap();
     let button = if let Ok(Some(element)) = document.query_selector(selector) {
@@ -122,26 +120,40 @@ fn initialize_button(
         document.body().unwrap().append_child(&button).unwrap();
         button.into()
     };
-    button.set_attribute("disabled", "true").unwrap();
+
+    //button.set_attribute("disabled", "true").unwrap();
+
+    let button: HtmlButtonElement = button.dyn_into().unwrap();
 
     let event_target: EventTarget = button.clone().into();
     let mousedown_closure = Closure::<dyn FnMut()>::new(move || {
         let session_ref = session_ref.clone();
-        info!("Request session mousedown!");
-        let xr = web_sys::window().unwrap().navigator().xr();
-        let session = wasm_bindgen_futures::JsFuture::from(match button_type {
-            ButtonType::VR => xr.request_session(XrSessionMode::ImmersiveVr),
-            ButtonType::AR => xr.request_session(XrSessionMode::ImmersiveAr),
-        });
         AsyncComputeTaskPool::get().spawn(async move {
+            info!("Session await spawned!");
+            let xr = web_sys::window().unwrap().navigator().xr();
+            let session = match button_type {
+                ButtonType::VR => wasm_bindgen_futures::JsFuture::from(
+                    xr.request_session(XrSessionMode::ImmersiveVr),
+                ),
+                ButtonType::AR => wasm_bindgen_futures::JsFuture::from(
+                    xr.request_session(XrSessionMode::ImmersiveAr),
+                ),
+            };
+            info!("{:?}", session);
             match session.await {
-                Ok(session) => session_ref.replace(Some(Ok(session.into()))),
-                Err(err) => session_ref.replace(Some(Err(WebXrError::JsError(err)))),
+                Ok(session) => {
+                    session_ref.replace(Some(Ok(session.into())));
+                }
+                Err(err) => {
+                    session_ref.replace(Some(Err(WebXrError::JsError(err))));
+                }
             };
         });
     });
-    event_target
-        .add_event_listener_with_callback(&"mousedown", mousedown_closure.as_ref().unchecked_ref())
-        .unwrap();
+    button.set_onclick(Some(mousedown_closure.as_ref().unchecked_ref()));
+
+    // event_target
+    //     .add_event_listener_with_callback(&"mousedown", mousedown_closure.as_ref().unchecked_ref())
+    //     .unwrap();
     mousedown_closure.forget();
 }
