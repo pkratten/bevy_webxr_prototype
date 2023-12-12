@@ -13,4 +13,6 @@ pub enum WebXrError {
     CanvasNotFound,
     #[error("WebGL2 context not found!")]
     WebGl2ContextNotFound,
+    #[error("Session lost!")]
+    SessionError,
 }

@@ -6,24 +6,13 @@ use web_sys::{EventTarget, HtmlButtonElement, WebGl2RenderingContext, XrSession,
 
 pub(crate) async fn initialize_webxr(
     settings: WebXrSettings,
-    canvas: &str,
     session_ref: Rc<RefCell<Option<Result<XrSession, WebXrError>>>>,
-    render_context_ref: Rc<RefCell<Option<Result<WebGl2RenderingContext, WebXrError>>>>,
 ) {
-    if !settings.vr_supported & !settings.ar_supported {
-        warn!("WebXR VR and AR are disabled!");
-    };
-
-    let supported_sessions = get_supported_sessions().await;
-
     if let Ok(supported_session) = get_supported_sessions().await {
-        let context = get_gl_context(canvas).await;
-        render_context_ref.replace(Some(context));
-
-        if supported_session.vr {
+        if supported_session.vr & settings.vr_supported {
             initialize_button(&settings.vr_button, ButtonType::VR, session_ref.clone())
         };
-        if supported_session.ar {
+        if supported_session.ar & settings.ar_supported {
             initialize_button(&settings.ar_button, ButtonType::AR, session_ref.clone())
         };
     } else {
@@ -70,29 +59,6 @@ async fn get_supported_sessions() -> Result<SupportedSessions, WebXrError> {
     Ok(SupportedSessions { inline, vr, ar })
 }
 
-async fn get_gl_context(window_selector: &str) -> Result<WebGl2RenderingContext, WebXrError> {
-    let window = web_sys::window().unwrap();
-    let document = window.document().unwrap();
-
-    let context = document
-        .query_selector(&window_selector)
-        .map_err(|err| WebXrError::JsError(err))?
-        .ok_or(WebXrError::CanvasNotFound)?
-        .dyn_into::<web_sys::HtmlCanvasElement>()
-        .map_err(|_| WebXrError::CanvasNotFound)?
-        .get_context("webgl2")
-        .map_err(|err| WebXrError::JsError(err))?
-        .ok_or(WebXrError::WebGl2ContextNotFound)?
-        .dyn_into::<web_sys::WebGl2RenderingContext>()
-        .map_err(|_| WebXrError::WebGl2ContextNotFound)?;
-
-    wasm_bindgen_futures::JsFuture::from(context.make_xr_compatible())
-        .await
-        .map_err(|err| WebXrError::JsError(err))?;
-
-    Ok(context)
-}
-
 #[derive(Clone, Copy)]
 enum ButtonType {
     VR,
@@ -105,8 +71,8 @@ fn initialize_button(
     session_ref: Rc<RefCell<Option<Result<XrSession, WebXrError>>>>,
 ) {
     let document = web_sys::window().unwrap().document().unwrap();
-    let button = if let Ok(Some(element)) = document.query_selector(selector) {
-        element
+    let button: HtmlButtonElement = if let Ok(Some(element)) = document.query_selector(selector) {
+        element.dyn_into().unwrap()
     } else {
         let button = document
             .create_element("button")
@@ -118,29 +84,27 @@ fn initialize_button(
             ButtonType::AR => button.set_inner_text("Enter AR"),
         }
         document.body().unwrap().append_child(&button).unwrap();
-        button.into()
+        button
     };
 
     //button.set_attribute("disabled", "true").unwrap();
 
     let button: HtmlButtonElement = button.dyn_into().unwrap();
 
-    let event_target: EventTarget = button.clone().into();
-    let mousedown_closure = Closure::<dyn FnMut()>::new(move || {
+    let closure = Closure::<dyn FnMut()>::new(move || {
         let session_ref = session_ref.clone();
         AsyncComputeTaskPool::get().spawn(async move {
             info!("Session await spawned!");
             let xr = web_sys::window().unwrap().navigator().xr();
-            let session = match button_type {
-                ButtonType::VR => wasm_bindgen_futures::JsFuture::from(
-                    xr.request_session(XrSessionMode::ImmersiveVr),
-                ),
-                ButtonType::AR => wasm_bindgen_futures::JsFuture::from(
-                    xr.request_session(XrSessionMode::ImmersiveAr),
-                ),
-            };
-            info!("{:?}", session);
-            match session.await {
+
+            let session =
+                wasm_bindgen_futures::JsFuture::from(xr.request_session(match button_type {
+                    ButtonType::VR => XrSessionMode::ImmersiveVr,
+                    ButtonType::AR => XrSessionMode::ImmersiveAr,
+                }))
+                .await;
+
+            match session {
                 Ok(session) => {
                     session_ref.replace(Some(Ok(session.into())));
                 }
@@ -150,10 +114,8 @@ fn initialize_button(
             };
         });
     });
-    button.set_onclick(Some(mousedown_closure.as_ref().unchecked_ref()));
 
-    // event_target
-    //     .add_event_listener_with_callback(&"mousedown", mousedown_closure.as_ref().unchecked_ref())
-    //     .unwrap();
-    mousedown_closure.forget();
+    button.set_onclick(Some(closure.as_ref().unchecked_ref()));
+
+    closure.forget();
 }
