@@ -44,14 +44,26 @@ async fn init_context(
         .map_err(|err| WebXrError::JsError(err))?;
 
     if let Some(Ok(session)) = &*session.borrow() {
+        let layer_init = web_sys::XrWebGlLayerInit::new();
+
         let web_gl_layer =
-            web_sys::XrWebGlLayer::new_with_web_gl2_rendering_context(&session, &context)
-                .map_err(|err| WebXrError::JsError(err))?;
+            web_sys::XrWebGlLayer::new_with_web_gl2_rendering_context_and_layer_init(
+                &session,
+                &context,
+                &layer_init,
+            )
+            .map_err(|err| WebXrError::JsError(err))?;
 
         info!("{:?}", web_gl_layer);
 
         let mut render_state_init = web_sys::XrRenderStateInit::new();
+
+        info!("{:?}", render_state_init);
+
         render_state_init.base_layer(Some(&web_gl_layer));
+
+        info!("{:?}", render_state_init);
+
         session.update_render_state_with_state(&render_state_init);
 
         info!("{:?}", session.render_state().base_layer());

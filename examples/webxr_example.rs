@@ -1,11 +1,51 @@
 //! A simple 3D scene with light shining over a cube sitting on a plane.
 
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    render::{settings::WgpuSettings, texture::DefaultImageSampler, RenderPlugin},
+    winit::WinitPlugin,
+};
 use bevy_webxr::WebXrPlugin;
+use wasm_bindgen::JsCast;
+use web_sys::HtmlCanvasElement;
 
 fn main() {
+    let window = web_sys::window().expect("Failed to get window");
+    let document = window.document().expect("Failed to get document");
+
+    let canvas = document.create_element("canvas").unwrap();
+    canvas.set_id("test213");
+    canvas.set_class_name("test213");
+    canvas.set_node_value(Some("test213"));
+    canvas.set_attribute("test213", "test213");
+
+    let canvas: HtmlCanvasElement = canvas.dyn_into().unwrap();
+    canvas.set_height(200);
+    canvas.set_width(200);
+    web_sys::window()
+        .unwrap()
+        .document()
+        .unwrap()
+        .body()
+        .unwrap()
+        .append_child(&canvas);
+
+    canvas
+        .get_context("webgl2")
+        .unwrap()
+        .unwrap()
+        .dyn_into::<web_sys::WebGl2RenderingContext>()
+        .unwrap()
+        .make_xr_compatible();
+
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                canvas: Some(".test213".to_string()),
+                ..default()
+            }),
+            ..default()
+        }))
         .add_plugins(WebXrPlugin::default())
         .add_systems(Startup, setup)
         .run();
