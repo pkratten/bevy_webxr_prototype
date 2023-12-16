@@ -20,6 +20,10 @@ pub(crate) fn poll_session(context: NonSendMut<WebXrContext>, mut session: Local
     }
 }
 
+struct ContextTask;
+
+pub(crate) fn poll_context() {}
+
 async fn init_context(
     session: Rc<RefCell<Option<Result<XrSession, WebXrError>>>>,
     canvas: String,
@@ -27,12 +31,14 @@ async fn init_context(
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
 
-    let context = document
+    let canvas = document
         .query_selector(&canvas)
         .map_err(|err| WebXrError::JsError(err))?
         .ok_or(WebXrError::CanvasNotFound)?
         .dyn_into::<web_sys::HtmlCanvasElement>()
-        .map_err(|_| WebXrError::CanvasNotFound)?
+        .map_err(|_| WebXrError::CanvasNotFound)?;
+
+    let context = canvas
         .get_context("webgl2")
         .map_err(|err| WebXrError::JsError(err))?
         .ok_or(WebXrError::WebGl2ContextNotFound)?

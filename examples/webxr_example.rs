@@ -39,6 +39,7 @@ fn main() {
         .make_xr_compatible();
 
     App::new()
+        .insert_resource(Msaa::Off)
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 canvas: Some(".test213".to_string()),
