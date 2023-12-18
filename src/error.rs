@@ -15,4 +15,14 @@ pub enum WebXrError {
     WebGl2ContextNotFound,
     #[error("Session lost!")]
     SessionError,
+    #[error("Browser window not found!")]
+    NoWindow,
+    #[error("HTML Document not found!")]
+    NoDocument,
+    #[error("XR Initialize Element is not a html button element!")]
+    ElementNotButtonElement(web_sys::Element),
+    #[error("HTML Body not found!")]
+    NoBody,
+    #[error("Failed to request xr session!")]
+    SessionRequestError(JsValue),
 }
