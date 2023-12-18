@@ -1,13 +1,13 @@
 use bevy::prelude::*;
 
-mod camera;
+//mod camera;
 pub mod error;
 pub mod events;
 mod init;
 mod session;
 
 #[derive(Clone, Copy)]
-enum XrMode {
+pub enum XrMode {
     VR,
     AR,
     Inline,
@@ -44,7 +44,7 @@ pub struct WebXrPlugin {
 impl Plugin for WebXrPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<events::WebXrSessionInitialized>();
-        app.insert_resource(self.settings);
+        app.insert_resource(self.settings.clone());
         app.set_runner(init::webxr_runner);
     }
 }

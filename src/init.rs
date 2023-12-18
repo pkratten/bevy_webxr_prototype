@@ -22,7 +22,7 @@ pub(crate) fn webxr_runner(mut app: App) {
     initialize_webxr(settings, unsafe_app.get());
 
     unsafe {
-        let mut app = unsafe_app.get().read();
+        let app = unsafe_app.get().read();
 
         info!("starting winit_runner");
         bevy::winit::winit_runner(app);
@@ -34,13 +34,13 @@ async fn initialize_webxr(settings: WebXrSettings, app: *mut App) {
     if supported_sessions.vr & settings.vr_supported {
         debug!(
             "Initialize vr button: {:?}",
-            initialize_button(XrButtonType::VR, &settings, app)
+            initialize_button(XrButtonType::VR, settings.clone(), app)
         );
     };
     if supported_sessions.ar & settings.ar_supported {
         debug!(
             "Initialize ar button: {:?}",
-            initialize_button(XrButtonType::AR, &settings, app)
+            initialize_button(XrButtonType::AR, settings.clone(), app)
         );
     };
     // maybe initialize inline here.ror!("WebXR not supported!");
@@ -90,7 +90,7 @@ enum XrButtonType {
 
 fn initialize_button(
     button_type: XrButtonType,
-    settings: &WebXrSettings,
+    settings: WebXrSettings,
     app: *mut App,
 ) -> Result<(), WebXrError> {
     let document = web_sys::window()
@@ -127,9 +127,14 @@ fn initialize_button(
     //button.set_attribute("disabled", "true").unwrap();
 
     let closure = Closure::<dyn FnMut()>::new(move || {
-        AsyncComputeTaskPool::get().spawn(async move {
-            debug!("Session await spawned!");
-        });
+        AsyncComputeTaskPool::get().spawn(initialize_session(
+            match button_type {
+                XrButtonType::VR => XrMode::VR,
+                XrButtonType::AR => XrMode::AR,
+            },
+            settings.clone(),
+            app,
+        ));
     });
 
     button.set_onclick(Some(closure.as_ref().unchecked_ref()));
@@ -141,16 +146,16 @@ fn initialize_button(
 
 async fn initialize_session(
     mode: XrMode,
-    settings: &WebXrSettings,
+    settings: WebXrSettings,
     app: *mut App,
 ) -> Result<(), WebXrError> {
     let session = request_session(mode).await?;
 
     let canvas = initialize_canvas(Some(&settings.canvas))?;
 
-    initialize_render_context(&session, &canvas);
+    initialize_render_context(&session, &canvas).await?;
 
-    request_first_web_xr_frame(&session, app, mode);
+    request_first_web_xr_frame(&session, app, mode)?;
 
     Ok(())
 }
@@ -289,10 +294,11 @@ fn request_first_web_xr_frame(
 
     print_frame_index(frame_index);
 
-    let app = unsafe { app.clone().read() };
+    let mut app = unsafe { app.clone().read() };
 
+    let winit_settings = app.world.remove_resource();
     app.world
-        .insert_resource(WinitSettingsBackup(app.world.remove_resource()));
+        .insert_resource(WinitSettingsBackup(winit_settings));
     app.world.insert_resource(WinitSettings {
         return_from_run: false,
         focused_mode: bevy::winit::UpdateMode::ReactiveLowPower {
