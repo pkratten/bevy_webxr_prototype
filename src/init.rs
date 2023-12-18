@@ -1,8 +1,9 @@
 use crate::{error::WebXrError, events::WebXrSessionInitialized, WebXrSettings, XrMode};
-use bevy::{prelude::*, tasks::AsyncComputeTaskPool};
+use bevy::{prelude::*, tasks::AsyncComputeTaskPool, winit::WinitSettings};
 use std::{
     cell::{RefCell, UnsafeCell},
     rc::Rc,
+    time::Duration,
 };
 use wasm_bindgen::{prelude::Closure, JsCast, UnwrapThrowExt};
 use web_sys::{HtmlButtonElement, HtmlCanvasElement, XrSession, XrSessionMode};
@@ -234,6 +235,9 @@ struct XrFrame {
     pub webxr_frame: web_sys::XrFrame,
 }
 
+#[derive(Resource)]
+struct WinitSettingsBackup(pub Option<WinitSettings>);
+
 fn request_first_web_xr_frame(
     session: &XrSession,
     app: *mut App,
@@ -285,12 +289,21 @@ fn request_first_web_xr_frame(
 
     print_frame_index(frame_index);
 
-    unsafe {
-        app.clone()
-            .read()
-            .world
-            .send_event(WebXrSessionInitialized(mode));
-    }
+    let app = unsafe { app.clone().read() };
+
+    app.world
+        .insert_resource(WinitSettingsBackup(app.world.remove_resource()));
+    app.world.insert_resource(WinitSettings {
+        return_from_run: false,
+        focused_mode: bevy::winit::UpdateMode::ReactiveLowPower {
+            wait: Duration::MAX,
+        },
+        unfocused_mode: bevy::winit::UpdateMode::ReactiveLowPower {
+            wait: Duration::MAX,
+        },
+    });
+
+    app.world.send_event(WebXrSessionInitialized(mode));
 
     Ok(())
 }
