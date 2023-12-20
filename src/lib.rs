@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-//mod camera;
+mod camera;
 pub mod error;
 pub mod events;
 mod init;
@@ -47,4 +47,9 @@ impl Plugin for WebXrPlugin {
         app.insert_resource(self.settings.clone());
         app.set_runner(init::webxr_runner);
     }
+}
+
+pub(crate) struct XrFrame {
+    pub time: f64,
+    pub webxr_frame: web_sys::XrFrame,
 }

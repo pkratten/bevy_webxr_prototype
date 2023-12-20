@@ -1,4 +1,4 @@
-use crate::{error::WebXrError, events::WebXrSessionInitialized, WebXrSettings, XrMode};
+use crate::{error::WebXrError, events::WebXrSessionInitialized, WebXrSettings, XrFrame, XrMode};
 use bevy::{prelude::*, tasks::AsyncComputeTaskPool, winit::WinitSettings};
 use std::{
     cell::{RefCell, UnsafeCell},
@@ -233,11 +233,6 @@ async fn initialize_render_context(
     debug!("{:?}", session.render_state().base_layer());
 
     Ok(())
-}
-
-struct XrFrame {
-    pub time: f64,
-    pub webxr_frame: web_sys::XrFrame,
 }
 
 #[derive(Resource)]
