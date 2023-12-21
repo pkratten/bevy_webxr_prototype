@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 
-mod camera;
+pub mod camera;
 pub mod error;
 pub mod events;
-mod init;
+pub mod init;
 mod session;
 
 #[derive(Clone, Copy)]
@@ -31,7 +31,7 @@ impl Default for WebXrSettings {
             inline_supported: false, // Not implemented yet.
             vr_button: "vr_button".to_string(),
             ar_button: "ar_button".to_string(),
-            canvas: "canvas[data-raw-handle]".to_string(),
+            canvas: "bevyxr".to_string(),
         }
     }
 }
@@ -49,7 +49,7 @@ impl Plugin for WebXrPlugin {
     }
 }
 
-pub(crate) struct XrFrame {
+pub struct XrFrame {
     pub time: f64,
     pub webxr_frame: web_sys::XrFrame,
 }

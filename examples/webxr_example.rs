@@ -1,55 +1,53 @@
 //! A simple 3D scene with light shining over a cube sitting on a plane.
 
 use bevy::{
+    log::LogPlugin,
     prelude::*,
     render::{settings::WgpuSettings, texture::DefaultImageSampler, RenderPlugin},
     winit::WinitPlugin,
 };
-use bevy_webxr::WebXrPlugin;
+use bevy_webxr::{
+    camera::update_webxr_camera, init::initialize_canvas, WebXrPlugin, WebXrSettings,
+};
 use wasm_bindgen::JsCast;
 use web_sys::HtmlCanvasElement;
 
 fn main() {
-    let window = web_sys::window().expect("Failed to get window");
-    let document = window.document().expect("Failed to get document");
+    let mut app = App::new();
+    app.add_plugins(LogPlugin::default());
 
-    let canvas = document.create_element("canvas").unwrap();
-    canvas.set_id("test213");
-    canvas.set_class_name("test213");
-    canvas.set_node_value(Some("test213"));
-    canvas.set_attribute("test213", "test213");
+    info!("{:?}", initialize_canvas("bevyxr"));
+    info!("HI!");
 
-    let canvas: HtmlCanvasElement = canvas.dyn_into().unwrap();
-    canvas.set_height(200);
-    canvas.set_width(200);
-    web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .body()
-        .unwrap()
-        .append_child(&canvas);
+    app.insert_resource(ClearColor(Color::GOLD));
 
-    canvas
-        .get_context("webgl2")
-        .unwrap()
-        .unwrap()
-        .dyn_into::<web_sys::WebGl2RenderingContext>()
-        .unwrap()
-        .make_xr_compatible();
-
-    App::new()
-        .insert_resource(Msaa::Off)
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                canvas: Some(".test213".to_string()),
+    app.insert_resource(Msaa::Off).add_plugins(
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    canvas: Some("canvas[bevyxr=\"bevyxr\"]".to_string()),
+                    ..default()
+                }),
                 ..default()
-            }),
+            })
+            //.disable::<WinitPlugin>()
+            .disable::<LogPlugin>(),
+    );
+
+    app.add_plugins(WebXrPlugin {
+        settings: WebXrSettings {
+            canvas: "bevyxr".to_string(),
             ..default()
-        }))
-        .add_plugins(WebXrPlugin::default())
-        .add_systems(Startup, setup)
-        .run();
+        },
+    })
+    .add_systems(Startup, setup)
+    .add_systems(
+        PreUpdate,
+        bevy_webxr::camera::spawn_webxr_camera
+            .run_if(on_event::<bevy_webxr::events::WebXrSessionInitialized>()),
+    )
+    .add_systems(Update, update_webxr_camera)
+    .run();
 }
 
 /// set up a simple 3D scene

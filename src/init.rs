@@ -1,12 +1,14 @@
 use crate::{error::WebXrError, events::WebXrSessionInitialized, WebXrSettings, XrFrame, XrMode};
-use bevy::{prelude::*, tasks::AsyncComputeTaskPool, winit::WinitSettings};
+use bevy::{app::PluginsState, prelude::*, tasks::AsyncComputeTaskPool, winit::WinitSettings};
+use std::sync::{Arc, Mutex};
 use std::{
     cell::{RefCell, UnsafeCell},
     rc::Rc,
     time::Duration,
 };
 use wasm_bindgen::{prelude::Closure, JsCast, UnwrapThrowExt};
-use web_sys::{HtmlButtonElement, HtmlCanvasElement, XrSession, XrSessionMode};
+use wasm_bindgen_futures::{spawn_local, JsFuture};
+use web_sys::{HtmlButtonElement, HtmlCanvasElement, XrReferenceSpace, XrSession, XrSessionMode};
 
 ///
 /// This is central unsafe method to get winit and webxr working together in bevy with minimal upstreaming.
@@ -17,30 +19,27 @@ pub(crate) fn webxr_runner(mut app: App) {
         .remove_resource::<WebXrSettings>()
         .expect("WebXrSettings not found!");
 
-    let unsafe_app = UnsafeCell::new(app);
+    let app_mutex = Arc::new(Mutex::new(app));
 
-    initialize_webxr(settings, unsafe_app.get());
-
-    unsafe {
-        let app = unsafe_app.get().read();
-
-        info!("starting winit_runner");
-        bevy::winit::winit_runner(app);
-    }
+    let app_clone = app_mutex.clone();
+    spawn_local(async {
+        info!("Hi!");
+        initialize_webxr(settings, app_clone).await;
+    });
 }
 
-async fn initialize_webxr(settings: WebXrSettings, app: *mut App) {
+async fn initialize_webxr(settings: WebXrSettings, app: Arc<Mutex<App>>) {
     let supported_sessions = get_supported_sessions().await.unwrap_throw();
     if supported_sessions.vr & settings.vr_supported {
-        debug!(
+        info!(
             "Initialize vr button: {:?}",
-            initialize_button(XrButtonType::VR, settings.clone(), app)
+            initialize_button(XrButtonType::VR, settings.clone(), app.clone())
         );
     };
     if supported_sessions.ar & settings.ar_supported {
-        debug!(
+        info!(
             "Initialize ar button: {:?}",
-            initialize_button(XrButtonType::AR, settings.clone(), app)
+            initialize_button(XrButtonType::AR, settings.clone(), app.clone())
         );
     };
     // maybe initialize inline here.ror!("WebXR not supported!");
@@ -91,7 +90,7 @@ enum XrButtonType {
 fn initialize_button(
     button_type: XrButtonType,
     settings: WebXrSettings,
-    app: *mut App,
+    app: Arc<Mutex<App>>,
 ) -> Result<(), WebXrError> {
     let document = web_sys::window()
         .ok_or(WebXrError::NoWindow)?
@@ -133,7 +132,7 @@ fn initialize_button(
                 XrButtonType::AR => XrMode::AR,
             },
             settings.clone(),
-            app,
+            app.clone(),
         ));
     });
 
@@ -144,20 +143,24 @@ fn initialize_button(
     Ok(())
 }
 
-async fn initialize_session(
-    mode: XrMode,
-    settings: WebXrSettings,
-    app: *mut App,
-) -> Result<(), WebXrError> {
-    let session = request_session(mode).await?;
+async fn initialize_session(mode: XrMode, settings: WebXrSettings, app: Arc<Mutex<App>>) {
+    let session = request_session(mode).await;
 
-    let canvas = initialize_canvas(Some(&settings.canvas))?;
+    info!("{:?}", session);
 
-    initialize_render_context(&session, &canvas).await?;
+    let session = session.unwrap_throw();
 
-    request_first_web_xr_frame(&session, app, mode)?;
+    let canvas = initialize_canvas(&settings.canvas);
 
-    Ok(())
+    info!("{:?}", canvas);
+
+    let canvas = canvas.unwrap_throw();
+
+    info!("{:?}", initialize_render_context(&session, &canvas).await);
+
+    info!("{:?}", initialize_reference_space(&session).await);
+
+    info!("{:?}", request_first_web_xr_frame(&session, app, mode));
 }
 
 async fn request_session(mode: XrMode) -> Result<XrSession, WebXrError> {
@@ -178,19 +181,30 @@ async fn request_session(mode: XrMode) -> Result<XrSession, WebXrError> {
     session
 }
 
-fn initialize_canvas(canvas: Option<&str>) -> Result<web_sys::HtmlCanvasElement, WebXrError> {
+pub fn initialize_canvas(canvas: &str) -> Result<web_sys::HtmlCanvasElement, WebXrError> {
     let window = web_sys::window().ok_or(WebXrError::NoWindow)?;
     let document = window.document().ok_or(WebXrError::NoDocument)?;
 
-    if let Some(canvas) = canvas {
-        document
-            .query_selector(canvas)
-            .map_err(|err| WebXrError::JsError(err))?
-            .ok_or(WebXrError::CanvasNotFound)?
-            .dyn_into::<web_sys::HtmlCanvasElement>()
-            .map_err(|_| WebXrError::CanvasNotFound)
+    if let Ok(Some(canvas_element)) = document.query_selector(canvas) {
+        let canvas_element = canvas_element
+            .dyn_into::<HtmlCanvasElement>()
+            .map_err(|err| WebXrError::ElementNotCanvasElement(err))?;
+        Ok(canvas_element)
     } else {
-        todo!()
+        let element = document
+            .create_element("canvas")
+            .map_err(|err| WebXrError::JsError(err))?;
+        let canvas_element = element
+            .dyn_into::<HtmlCanvasElement>()
+            .map_err(|err| WebXrError::ElementNotCanvasElement(err))?;
+        canvas_element.set_id(canvas);
+        canvas_element.set_attribute(canvas, canvas).unwrap();
+        document
+            .body()
+            .ok_or(WebXrError::NoBody)?
+            .append_child(&canvas_element)
+            .map_err(|err| WebXrError::JsError(err))?;
+        Ok(canvas_element)
     }
 }
 
@@ -218,21 +232,31 @@ async fn initialize_render_context(
     )
     .map_err(|err| WebXrError::JsError(err))?;
 
-    debug!("{:?}", web_gl_layer);
+    info!("{:?}", web_gl_layer);
 
     let mut render_state_init = web_sys::XrRenderStateInit::new();
 
-    debug!("{:?}", render_state_init);
+    info!("{:?}", render_state_init);
 
     render_state_init.base_layer(Some(&web_gl_layer));
 
-    debug!("{:?}", render_state_init);
+    info!("{:?}", render_state_init);
 
     session.update_render_state_with_state(&render_state_init);
 
-    debug!("{:?}", session.render_state().base_layer());
+    info!("{:?}", session.render_state().base_layer());
 
     Ok(())
+}
+
+async fn initialize_reference_space(session: &XrSession) -> Result<XrReferenceSpace, WebXrError> {
+    let reference_space =
+        JsFuture::from(session.request_reference_space(web_sys::XrReferenceSpaceType::Local))
+            .await
+            .map_err(|err| WebXrError::JsError(err))?
+            .into();
+
+    Ok(reference_space)
 }
 
 #[derive(Resource)]
@@ -240,7 +264,7 @@ struct WinitSettingsBackup(pub Option<WinitSettings>);
 
 fn request_first_web_xr_frame(
     session: &XrSession,
-    app: *mut App,
+    app: Arc<Mutex<App>>,
     mode: XrMode,
 ) -> Result<(), WebXrError> {
     info!("Starting webxr rendering!");
@@ -251,10 +275,13 @@ fn request_first_web_xr_frame(
         Rc::new(RefCell::new(None));
     let closure_clone = closure.clone();
 
+    let app_clone = app.clone();
+
     *closure.borrow_mut() = Some(Closure::wrap(Box::new(
         move |time: f64, frame: web_sys::XrFrame| {
-            debug!("Update xr frame!");
-            let mut app = unsafe { app.clone().read() };
+            info!("Update xr frame!");
+
+            let mut app = app_clone.lock().unwrap();
             //// Insert XRFrame stuff
             app.world.insert_non_send_resource(XrFrame {
                 time: time,
@@ -289,7 +316,7 @@ fn request_first_web_xr_frame(
 
     print_frame_index(frame_index);
 
-    let mut app = unsafe { app.clone().read() };
+    let mut app = unsafe { app.lock().unwrap() };
 
     let winit_settings = app.world.remove_resource();
     app.world
@@ -306,6 +333,11 @@ fn request_first_web_xr_frame(
 
     app.world.send_event(WebXrSessionInitialized(mode));
 
+    if app.plugins_state() == PluginsState::Ready {
+        app.finish();
+        app.cleanup();
+    }
+
     Ok(())
 }
 
@@ -313,5 +345,5 @@ fn print_frame_index(frame_index: u32) {
     let mut string = "Xr Frame #".to_string();
     string.push_str(&frame_index.to_string());
     string.push_str(" requested!");
-    debug!(string);
+    info!(string);
 }

@@ -19,10 +19,14 @@ pub enum WebXrError {
     NoWindow,
     #[error("HTML Document not found!")]
     NoDocument,
-    #[error("XR Initialize Element is not a html button element!")]
+    #[error("Element is not a html button element!")]
     ElementNotButtonElement(web_sys::Element),
     #[error("HTML Body not found!")]
     NoBody,
     #[error("Failed to request xr session!")]
     SessionRequestError(JsValue),
+    #[error("HTML Canvas not found!")]
+    NoCanvas,
+    #[error("Element is not a html canvas element.")]
+    ElementNotCanvasElement(web_sys::Element),
 }
