@@ -6,6 +6,7 @@ use std::{
     rc::Rc,
     time::Duration,
 };
+use wasm_bindgen::JsValue;
 use wasm_bindgen::{prelude::Closure, JsCast, UnwrapThrowExt};
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{HtmlButtonElement, HtmlCanvasElement, XrReferenceSpace, XrSession, XrSessionMode};
@@ -23,7 +24,6 @@ pub(crate) fn webxr_runner(mut app: App) {
 
     let app_clone = app_mutex.clone();
     spawn_local(async {
-        info!("Hi!");
         initialize_webxr(settings, app_clone).await;
     });
 }
@@ -42,7 +42,7 @@ async fn initialize_webxr(settings: WebXrSettings, app: Arc<Mutex<App>>) {
             initialize_button(XrButtonType::AR, settings.clone(), app.clone())
         );
     };
-    // maybe initialize inline here.ror!("WebXR not supported!");
+    // maybe initialize inline here.
 }
 
 struct SupportedSessions {
@@ -146,21 +146,30 @@ fn initialize_button(
 async fn initialize_session(mode: XrMode, settings: WebXrSettings, app: Arc<Mutex<App>>) {
     let session = request_session(mode).await;
 
-    info!("{:?}", session);
+    info!("Session requested: {:?}", session);
 
     let session = session.unwrap_throw();
 
     let canvas = initialize_canvas(&settings.canvas);
 
-    info!("{:?}", canvas);
+    info!("Canvas initialized: {:?}", canvas);
 
     let canvas = canvas.unwrap_throw();
 
-    info!("{:?}", initialize_render_context(&session, &canvas).await);
+    info!(
+        "Reference space initialized: {:?}",
+        initialize_reference_space(&session).await
+    );
 
-    info!("{:?}", initialize_reference_space(&session).await);
+    info!(
+        "Render context initialized{:?}",
+        initialize_render_context(&session, &canvas).await
+    );
 
-    info!("{:?}", request_first_web_xr_frame(&session, app, mode));
+    info!(
+        "Frame initialized: {:?}",
+        request_first_web_xr_frame(&session, app, mode)
+    );
 }
 
 async fn request_session(mode: XrMode) -> Result<XrSession, WebXrError> {
@@ -219,32 +228,41 @@ async fn initialize_render_context(
         .dyn_into::<web_sys::WebGl2RenderingContext>()
         .map_err(|_| WebXrError::WebGl2ContextNotFound)?;
 
-    wasm_bindgen_futures::JsFuture::from(context.make_xr_compatible())
+    info!("Rendering context before xr compatible: {:?}", context);
+
+    let promise = wasm_bindgen_futures::JsFuture::from(context.make_xr_compatible())
         .await
         .map_err(|err| WebXrError::JsError(err))?;
 
-    let layer_init = web_sys::XrWebGlLayerInit::new();
+    info!("Promise of make xr compatible: {:?}", promise);
+    info!("Rendering context after xr compatible: {:?}", context);
 
-    let web_gl_layer = web_sys::XrWebGlLayer::new_with_web_gl2_rendering_context_and_layer_init(
-        &session,
-        &context,
-        &layer_init,
-    )
-    .map_err(|err| WebXrError::JsError(err))?;
+    let web_gl_layer =
+        web_sys::XrWebGlLayer::new_with_web_gl2_rendering_context(&session, &context)
+            .map_err(|err| WebXrError::JsError(err))?;
 
-    info!("{:?}", web_gl_layer);
+    info!("XrWeGlLayer: {:?}", web_gl_layer);
 
     let mut render_state_init = web_sys::XrRenderStateInit::new();
 
-    info!("{:?}", render_state_init);
+    info!(
+        "Render state init before base layer: {:?}",
+        render_state_init
+    );
 
     render_state_init.base_layer(Some(&web_gl_layer));
 
-    info!("{:?}", render_state_init);
+    info!(
+        "Render state init after base layer: {:?}",
+        render_state_init
+    );
 
     session.update_render_state_with_state(&render_state_init);
 
-    info!("{:?}", session.render_state().base_layer());
+    info!(
+        "Render state base layer of session after update session render state: {:?}",
+        session.render_state().base_layer()
+    );
 
     Ok(())
 }
@@ -258,9 +276,6 @@ async fn initialize_reference_space(session: &XrSession) -> Result<XrReferenceSp
 
     Ok(reference_space)
 }
-
-#[derive(Resource)]
-struct WinitSettingsBackup(pub Option<WinitSettings>);
 
 fn request_first_web_xr_frame(
     session: &XrSession,
@@ -316,20 +331,7 @@ fn request_first_web_xr_frame(
 
     print_frame_index(frame_index);
 
-    let mut app = unsafe { app.lock().unwrap() };
-
-    let winit_settings = app.world.remove_resource();
-    app.world
-        .insert_resource(WinitSettingsBackup(winit_settings));
-    app.world.insert_resource(WinitSettings {
-        return_from_run: false,
-        focused_mode: bevy::winit::UpdateMode::ReactiveLowPower {
-            wait: Duration::MAX,
-        },
-        unfocused_mode: bevy::winit::UpdateMode::ReactiveLowPower {
-            wait: Duration::MAX,
-        },
-    });
+    let mut app = app.lock().unwrap();
 
     app.world.send_event(WebXrSessionInitialized(mode));
 
