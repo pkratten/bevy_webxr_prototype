@@ -1,5 +1,6 @@
 use crate::{error::WebXrError, events::WebXrSessionInitialized, WebXrSettings, XrFrame, XrMode};
 use bevy::{app::PluginsState, prelude::*, tasks::AsyncComputeTaskPool, winit::WinitSettings};
+use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 use std::{
     cell::{RefCell, UnsafeCell},
@@ -22,9 +23,8 @@ pub(crate) fn webxr_runner(mut app: App) {
 
     let app_mutex = Arc::new(Mutex::new(app));
 
-    let app_clone = app_mutex.clone();
     spawn_local(async {
-        initialize_webxr(settings, app_clone).await;
+        initialize_webxr(settings, app_mutex).await;
     });
 }
 
@@ -42,7 +42,13 @@ async fn initialize_webxr(settings: WebXrSettings, app: Arc<Mutex<App>>) {
             initialize_button(XrButtonType::AR, settings.clone(), app.clone())
         );
     };
-    // maybe initialize inline here.
+
+    if supported_sessions.inline {
+        initialize_session(XrMode::Inline, settings.clone(), app.clone()).await;
+    } else {
+        let mut app = Arc::try_unwrap(app).unwrap().into_inner().unwrap();
+        bevy::winit::winit_runner(app);
+    }
 }
 
 struct SupportedSessions {
@@ -144,6 +150,8 @@ fn initialize_button(
 }
 
 async fn initialize_session(mode: XrMode, settings: WebXrSettings, app: Arc<Mutex<App>>) {
+    info!("Requesting session!");
+
     let session = request_session(mode).await;
 
     info!("Session requested: {:?}", session);
