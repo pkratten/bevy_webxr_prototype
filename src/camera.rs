@@ -29,7 +29,7 @@ pub fn spawn_webxr_camera(
                     inner: wgpu_hal::gles::TextureInner::ExternalFramebuffer { inner: framebuffer },
                     mip_level_count: 1,
                     array_layer_count: 1,
-                    format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                    format: wgpu::TextureFormat::Rgba8Unorm,
                     format_desc: wgpu_hal::gles::TextureFormatDesc {
                         internal: glow::RGBA,
                         external: glow::RGBA,
@@ -40,8 +40,8 @@ pub fn spawn_webxr_camera(
                         height: base_layer.framebuffer_height(),
                         depth: 1,
                     },
-                    is_cubemap: false,
                     drop_guard: None,
+                    is_cubemap: false,
                 },
                 &wgpu::TextureDescriptor {
                     label: Some("framebuffer (color)"),
@@ -54,37 +54,38 @@ pub fn spawn_webxr_camera(
                     sample_count: 1,
                     dimension: wgpu::TextureDimension::D2,
                     format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                    view_formats: &[],
-                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT, //    | wgpu::TextureUsages::TEXTURE_BINDING,
-                                                                   // | wgpu::TextureUsages::COPY_SRC,
-                                                                   // | wgpu::TextureUsages::COPY_DST,
+                    view_formats: &[wgpu::TextureFormat::Rgba8UnormSrgb],
+                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                        | wgpu::TextureUsages::TEXTURE_BINDING,
+                    // | wgpu::TextureUsages::COPY_SRC,
+                    // | wgpu::TextureUsages::COPY_DST,
                 },
             )
     };
 
-    let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
-        label: Some(format!("color_texture").as_str()),
-        format: Some(wgpu::TextureFormat::Rgba8UnormSrgb),
-        dimension: Some(wgpu::TextureViewDimension::D2),
-        aspect: wgpu::TextureAspect::All,
-        base_mip_level: 0,
-        mip_level_count: None,
-        base_array_layer: 0,
-        array_layer_count: Some(1),
-    });
+    // let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
+    //     label: Some(format!("color_texture").as_str()),
+    //     format: Some(wgpu::TextureFormat::Rgba8UnormSrgb),
+    //     dimension: Some(wgpu::TextureViewDimension::D2),
+    //     aspect: wgpu::TextureAspect::All,
+    //     base_mip_level: 0,
+    //     mip_level_count: None,
+    //     base_array_layer: 0,
+    //     array_layer_count: Some(1),
+    // });
+    let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
     let handle = ManualTextureViewHandle(0);
 
     texture_views.insert(
         handle,
-        ManualTextureView {
-            texture_view: texture_view.into(),
-            size: UVec2 {
+        ManualTextureView::with_default_format(
+            texture_view.into(),
+            UVec2 {
                 x: base_layer.framebuffer_width(),
                 y: base_layer.framebuffer_height(),
             },
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-        },
+        ),
     );
 
     commands.spawn(Camera3dBundle {
@@ -145,7 +146,7 @@ pub fn update_webxr_camera(
                     inner: wgpu_hal::gles::TextureInner::ExternalFramebuffer { inner: framebuffer },
                     mip_level_count: 1,
                     array_layer_count: 1,
-                    format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                    format: wgpu::TextureFormat::Rgba8Unorm,
                     format_desc: wgpu_hal::gles::TextureFormatDesc {
                         internal: glow::RGBA,
                         external: glow::RGBA,
@@ -156,8 +157,8 @@ pub fn update_webxr_camera(
                         height: base_layer.framebuffer_height(),
                         depth: 1,
                     },
-                    is_cubemap: false,
                     drop_guard: None,
+                    is_cubemap: false,
                 },
                 &wgpu::TextureDescriptor {
                     label: Some("framebuffer (color)"),
@@ -170,36 +171,37 @@ pub fn update_webxr_camera(
                     sample_count: 1,
                     dimension: wgpu::TextureDimension::D2,
                     format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                    view_formats: &[],
-                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT, //    | wgpu::TextureUsages::TEXTURE_BINDING,
-                                                                   // | wgpu::TextureUsages::COPY_SRC,
-                                                                   // | wgpu::TextureUsages::COPY_DST,
+                    view_formats: &[wgpu::TextureFormat::Rgba8UnormSrgb],
+                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                        | wgpu::TextureUsages::TEXTURE_BINDING,
+                    // | wgpu::TextureUsages::COPY_SRC,
+                    // | wgpu::TextureUsages::COPY_DST,
                 },
             )
     };
 
-    let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
-        label: Some(format!("color_texture").as_str()),
-        format: Some(wgpu::TextureFormat::Rgba8UnormSrgb),
-        dimension: Some(wgpu::TextureViewDimension::D2),
-        aspect: wgpu::TextureAspect::All,
-        base_mip_level: 0,
-        mip_level_count: None,
-        base_array_layer: 0,
-        array_layer_count: Some(1),
-    });
+    // let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
+    //     label: Some(format!("color_texture").as_str()),
+    //     format: Some(wgpu::TextureFormat::Rgba8UnormSrgb),
+    //     dimension: Some(wgpu::TextureViewDimension::D2),
+    //     aspect: wgpu::TextureAspect::All,
+    //     base_mip_level: 0,
+    //     mip_level_count: None,
+    //     base_array_layer: 0,
+    //     array_layer_count: Some(1),
+    // });
+    let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
     let handle = ManualTextureViewHandle(0);
 
     texture_views.insert(
         handle,
-        ManualTextureView {
-            texture_view: texture_view.into(),
-            size: UVec2 {
+        ManualTextureView::with_default_format(
+            texture_view.into(),
+            UVec2 {
                 x: base_layer.framebuffer_width(),
                 y: base_layer.framebuffer_height(),
             },
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-        },
+        ),
     );
 }
