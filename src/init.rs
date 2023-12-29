@@ -46,7 +46,7 @@ async fn initialize_webxr(settings: WebXrSettings, app: Arc<Mutex<App>>) {
     if supported_sessions.inline {
         initialize_session(XrMode::Inline, settings.clone(), app.clone()).await;
     } else {
-        let mut app = Arc::try_unwrap(app).unwrap().into_inner().unwrap();
+        let app = Arc::try_unwrap(app).unwrap().into_inner().unwrap();
         bevy::winit::winit_runner(app);
     }
 }
@@ -150,6 +150,20 @@ fn initialize_button(
 }
 
 async fn initialize_session(mode: XrMode, settings: WebXrSettings, app: Arc<Mutex<App>>) {
+    info!("Stopping previous session!");
+
+    if let Some(frame) = app
+        .lock()
+        .unwrap()
+        .world
+        .remove_non_send_resource::<XrFrame>()
+    {
+        info!(
+            "Session ended: {:?}",
+            wasm_bindgen_futures::JsFuture::from(frame.webxr_frame.session().end()).await
+        );
+    }
+
     info!("Requesting session!");
 
     let session = request_session(mode).await;
@@ -170,7 +184,7 @@ async fn initialize_session(mode: XrMode, settings: WebXrSettings, app: Arc<Mute
     );
 
     info!(
-        "Render context initialized{:?}",
+        "Render context initialized: {:?}",
         initialize_render_context(&session, &canvas).await
     );
 
@@ -268,7 +282,7 @@ async fn initialize_render_context(
     session.update_render_state_with_state(&render_state_init);
 
     info!(
-        "Render state base layer of session after update session render state: {:?}",
+        "Render state base layer of session after update session's render state: {:?}",
         session.render_state().base_layer()
     );
 
@@ -304,22 +318,7 @@ fn request_first_web_xr_frame(
         move |time: f64, frame: web_sys::XrFrame| {
             info!("Update xr frame!");
 
-            let mut app = app_clone.lock().unwrap();
-            //// Insert XRFrame stuff
-            app.world.insert_non_send_resource(XrFrame {
-                time: time,
-                webxr_frame: frame,
-            });
-
-            app.update();
-
-            let frame = app
-                .world
-                .remove_non_send_resource::<XrFrame>()
-                .unwrap()
-                .webxr_frame;
-
-            //request_animation_frame(&session, closure_clone.borrow().as_ref().unwrap());
+            // TODO: Check if this works or if it has to happen after app.update()
             let frame_index = frame.session().request_animation_frame(
                 closure_clone
                     .borrow()
@@ -328,6 +327,15 @@ fn request_first_web_xr_frame(
                     .as_ref()
                     .unchecked_ref(),
             );
+
+            let mut app = app_clone.lock().unwrap();
+
+            app.world.insert_non_send_resource(XrFrame {
+                time: time,
+                webxr_frame: frame,
+            });
+
+            app.update();
 
             print_frame_index(frame_index);
         },
