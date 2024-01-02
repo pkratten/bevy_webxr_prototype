@@ -36,7 +36,7 @@ fn main() {
 
     app.add_plugins(WebXrPlugin {
         settings: WebXrSettings {
-            canvas: "bevyxr".to_string(),
+            canvas: "canvas[bevyxr=\"bevyxr\"]".to_string(),
             ..default()
         },
     })

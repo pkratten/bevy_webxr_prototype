@@ -16,6 +16,7 @@ pub fn spawn_webxr_camera(
 ) {
     let session = xr_frame.webxr_frame.session();
     let base_layer = session.render_state().base_layer().unwrap();
+    info!("{:?}", base_layer);
     let framebuffer: web_sys::WebGlFramebuffer =
         js_sys::Reflect::get(&base_layer, &"framebuffer".into())
             .unwrap()

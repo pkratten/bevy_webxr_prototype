@@ -353,7 +353,7 @@ fn request_first_web_xr_frame(
 
     //if app.plugins_state() == PluginsState::Ready {
     app.finish();
-    app.cleanup();
+    //app.cleanup();
     //}
 
     Ok(())
