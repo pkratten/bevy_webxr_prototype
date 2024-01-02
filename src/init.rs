@@ -1,5 +1,5 @@
 use crate::{error::WebXrError, events::WebXrSessionInitialized, WebXrSettings, XrFrame, XrMode};
-use bevy::{app::PluginsState, prelude::*, tasks::AsyncComputeTaskPool, winit::WinitSettings};
+use bevy::{prelude::*, tasks::AsyncComputeTaskPool, winit::WinitSettings};
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 use std::{
@@ -351,10 +351,10 @@ fn request_first_web_xr_frame(
 
     app.world.send_event(WebXrSessionInitialized(mode));
 
-    if app.plugins_state() == PluginsState::Ready {
-        app.finish();
-        app.cleanup();
-    }
+    //if app.plugins_state() == PluginsState::Ready {
+    app.finish();
+    app.cleanup();
+    //}
 
     Ok(())
 }
