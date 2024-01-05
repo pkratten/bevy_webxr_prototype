@@ -6,9 +6,7 @@ use bevy::{
     render::{settings::WgpuSettings, texture::DefaultImageSampler, RenderPlugin},
     winit::WinitPlugin,
 };
-use bevy_webxr::{
-    camera::update_webxr_camera, init::initialize_canvas, WebXrPlugin, WebXrSettings,
-};
+use bevy_webxr::{error::WebXrError, WebXrPlugin, WebXrSettings};
 use wasm_bindgen::JsCast;
 use web_sys::HtmlCanvasElement;
 
@@ -41,12 +39,6 @@ fn main() {
         },
     })
     .add_systems(Startup, setup)
-    .add_systems(
-        PreUpdate,
-        bevy_webxr::camera::spawn_webxr_camera
-            .run_if(on_event::<bevy_webxr::events::WebXrSessionInitialized>()),
-    )
-    .add_systems(Update, update_webxr_camera)
     .run();
 }
 
@@ -85,4 +77,31 @@ fn setup(
         transform: Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..default()
     });
+}
+
+pub fn initialize_canvas(canvas: &str) -> Result<web_sys::HtmlCanvasElement, WebXrError> {
+    let window = web_sys::window().ok_or(WebXrError::NoWindow)?;
+    let document = window.document().ok_or(WebXrError::NoDocument)?;
+
+    if let Ok(Some(canvas_element)) = document.query_selector(canvas) {
+        let canvas_element = canvas_element
+            .dyn_into::<HtmlCanvasElement>()
+            .map_err(|err| WebXrError::ElementNotCanvasElement(err))?;
+        Ok(canvas_element)
+    } else {
+        let element = document
+            .create_element("canvas")
+            .map_err(|err| WebXrError::JsError(err))?;
+        let canvas_element = element
+            .dyn_into::<HtmlCanvasElement>()
+            .map_err(|err| WebXrError::ElementNotCanvasElement(err))?;
+        canvas_element.set_id(canvas);
+        canvas_element.set_attribute(canvas, canvas).unwrap();
+        document
+            .body()
+            .ok_or(WebXrError::NoBody)?
+            .append_child(&canvas_element)
+            .map_err(|err| WebXrError::JsError(err))?;
+        Ok(canvas_element)
+    }
 }
