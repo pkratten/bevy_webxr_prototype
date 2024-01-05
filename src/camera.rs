@@ -6,10 +6,10 @@ use bevy::{
     },
 };
 
-use crate::XrFrame;
+use crate::WebXrFrame;
 
 pub fn spawn_webxr_camera(
-    xr_frame: NonSend<XrFrame>,
+    xr_frame: NonSend<WebXrFrame>,
     mut commands: Commands,
     render_device: Res<RenderDevice>,
     mut texture_views: ResMut<ManualTextureViews>,
@@ -128,7 +128,7 @@ pub fn spawn_webxr_camera(
 }
 
 pub fn update_webxr_camera(
-    xr_frame: NonSend<XrFrame>,
+    xr_frame: NonSend<WebXrFrame>,
     render_device: Res<RenderDevice>,
     mut texture_views: ResMut<ManualTextureViews>,
 ) {

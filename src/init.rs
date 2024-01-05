@@ -1,4 +1,6 @@
-use crate::{error::WebXrError, events::WebXrSessionInitialized, WebXrSettings, XrFrame, XrMode};
+use crate::{
+    error::WebXrError, events::WebXrSessionInitialized, WebXrFrame, WebXrSettings, XrMode,
+};
 use bevy::{prelude::*, tasks::AsyncComputeTaskPool, winit::WinitSettings};
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
@@ -10,7 +12,10 @@ use std::{
 use wasm_bindgen::JsValue;
 use wasm_bindgen::{prelude::Closure, JsCast, UnwrapThrowExt};
 use wasm_bindgen_futures::{spawn_local, JsFuture};
-use web_sys::{HtmlButtonElement, HtmlCanvasElement, XrReferenceSpace, XrSession, XrSessionMode};
+use web_sys::{
+    HtmlButtonElement, HtmlCanvasElement, XrReferenceSpace, XrReferenceSpaceType, XrSession,
+    XrSessionMode,
+};
 
 ///
 /// This is central unsafe method to get winit and webxr working together in bevy with minimal upstreaming.
@@ -156,7 +161,7 @@ async fn initialize_session(mode: XrMode, settings: WebXrSettings, app: Arc<Mute
         .lock()
         .unwrap()
         .world
-        .remove_non_send_resource::<XrFrame>()
+        .remove_non_send_resource::<WebXrFrame>()
     {
         info!(
             "Session ended: {:?}",
@@ -178,10 +183,11 @@ async fn initialize_session(mode: XrMode, settings: WebXrSettings, app: Arc<Mute
 
     let canvas = canvas.unwrap_throw();
 
-    info!(
-        "Reference space initialized: {:?}",
-        initialize_reference_space(&session).await
-    );
+    let reference_space = initialize_reference_space(&session, &mode).await;
+
+    info!("Reference space initialized: {:?}", reference_space);
+
+    let reference_space = reference_space.unwrap_throw();
 
     info!(
         "Render context initialized: {:?}",
@@ -190,7 +196,7 @@ async fn initialize_session(mode: XrMode, settings: WebXrSettings, app: Arc<Mute
 
     info!(
         "Frame initialized: {:?}",
-        request_first_web_xr_frame(&session, app, mode)
+        request_first_web_xr_frame(&session, reference_space, app, mode)
     );
 }
 
@@ -289,18 +295,27 @@ async fn initialize_render_context(
     Ok(())
 }
 
-async fn initialize_reference_space(session: &XrSession) -> Result<XrReferenceSpace, WebXrError> {
-    let reference_space =
-        JsFuture::from(session.request_reference_space(web_sys::XrReferenceSpaceType::Local))
-            .await
-            .map_err(|err| WebXrError::JsError(err))?
-            .into();
+// TODO: Make configurable in the future.
+async fn initialize_reference_space(
+    session: &XrSession,
+    xr_mode: &XrMode,
+) -> Result<XrReferenceSpace, WebXrError> {
+    let space_type = match xr_mode {
+        XrMode::VR => XrReferenceSpaceType::LocalFloor,
+        XrMode::AR => XrReferenceSpaceType::LocalFloor,
+        XrMode::Inline => XrReferenceSpaceType::Viewer,
+    };
+    let reference_space = JsFuture::from(session.request_reference_space(space_type))
+        .await
+        .map_err(|err| WebXrError::JsError(err))?
+        .into();
 
     Ok(reference_space)
 }
 
 fn request_first_web_xr_frame(
     session: &XrSession,
+    reference_space: XrReferenceSpace,
     app: Arc<Mutex<App>>,
     mode: XrMode,
 ) -> Result<(), WebXrError> {
@@ -330,9 +345,10 @@ fn request_first_web_xr_frame(
 
             let mut app = app_clone.lock().unwrap();
 
-            app.world.insert_non_send_resource(XrFrame {
+            app.world.insert_non_send_resource(WebXrFrame {
                 time: time,
                 webxr_frame: frame,
+                webxr_reference_space: reference_space.clone(),
             });
 
             app.update();

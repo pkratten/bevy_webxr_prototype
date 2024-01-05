@@ -1,10 +1,11 @@
 use bevy::prelude::*;
 
-pub mod camera;
+mod camera;
 pub mod error;
 pub mod events;
-pub mod init;
+mod init;
 mod session;
+mod tracked;
 
 #[derive(Clone, Copy)]
 pub enum XrMode {
@@ -43,13 +44,21 @@ pub struct WebXrPlugin {
 
 impl Plugin for WebXrPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<events::WebXrSessionInitialized>();
         app.insert_resource(self.settings.clone());
         app.set_runner(init::webxr_runner);
+
+        events::add_events(app);
+
+        app.add_systems(
+            PreUpdate,
+            camera::spawn_webxr_camera.run_if(on_event::<events::WebXrSessionInitialized>()),
+        )
+        .add_systems(Update, camera::update_webxr_camera);
     }
 }
 
-pub struct XrFrame {
+pub struct WebXrFrame {
     pub time: f64,
     pub webxr_frame: web_sys::XrFrame,
+    pub webxr_reference_space: web_sys::XrReferenceSpace,
 }
