@@ -3,7 +3,10 @@
 use bevy::{
     log::LogPlugin,
     prelude::*,
-    render::{settings::WgpuSettings, texture::DefaultImageSampler, RenderPlugin},
+    render::{
+        camera::CameraProjection, settings::WgpuSettings, texture::DefaultImageSampler,
+        RenderPlugin,
+    },
     winit::WinitPlugin,
 };
 use bevy_webxr::{error::WebXrError, WebXrPlugin, WebXrSettings};
@@ -50,16 +53,21 @@ fn setup(
 ) {
     // circular base
     commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Circle::new(4.0).into()),
+        mesh: meshes.add(shape::Circle::new(0.5).into()),
         material: materials.add(Color::WHITE.into()),
-        transform: Transform::from_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
+        transform: Transform::from_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
+            .with_translation(Vec3 {
+                x: 0.0,
+                y: -0.2,
+                z: 0.0,
+            }),
         ..default()
     });
     // cube
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+        mesh: meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
         material: materials.add(Color::rgb_u8(124, 144, 255).into()),
-        transform: Transform::from_xyz(0.0, 0.5, 0.0),
+        transform: Transform::from_xyz(0.0, -0.15, 0.0),
         ..default()
     });
     // light

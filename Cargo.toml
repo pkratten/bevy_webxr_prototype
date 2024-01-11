@@ -43,6 +43,7 @@ web-sys = { version = "0.3.61", features = [
     "XrRenderState",
     "XrRenderStateInit",
     "XrRigidTransform",
+    "DomPointReadOnly",
     "XrSession",
     "XrSessionEvent",
     "XrSessionEventInit",

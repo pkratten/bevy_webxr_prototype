@@ -1,15 +1,10 @@
 use crate::{
     error::WebXrError, events::WebXrSessionInitialized, WebXrFrame, WebXrSettings, XrMode,
 };
-use bevy::{prelude::*, tasks::AsyncComputeTaskPool, winit::WinitSettings};
-use std::ops::DerefMut;
+use bevy::{prelude::*, tasks::AsyncComputeTaskPool};
+use bevy_xr::space::XrOrigin;
 use std::sync::{Arc, Mutex};
-use std::{
-    cell::{RefCell, UnsafeCell},
-    rc::Rc,
-    time::Duration,
-};
-use wasm_bindgen::JsValue;
+use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{prelude::Closure, JsCast, UnwrapThrowExt};
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{
@@ -183,7 +178,7 @@ async fn initialize_session(mode: XrMode, settings: WebXrSettings, app: Arc<Mute
 
     let canvas = canvas.unwrap_throw();
 
-    let reference_space = initialize_reference_space(&session, &mode).await;
+    let reference_space = initialize_reference_space(&session, &mode, &settings.origin).await;
 
     info!("Reference space initialized: {:?}", reference_space);
 
@@ -196,7 +191,7 @@ async fn initialize_session(mode: XrMode, settings: WebXrSettings, app: Arc<Mute
 
     info!(
         "Frame initialized: {:?}",
-        request_first_web_xr_frame(&session, reference_space, app, mode)
+        request_first_web_xr_frame(&session, reference_space, app, mode, settings.origin)
     );
 }
 
@@ -295,16 +290,23 @@ async fn initialize_render_context(
     Ok(())
 }
 
-// TODO: Make configurable in the future.
 async fn initialize_reference_space(
     session: &XrSession,
     xr_mode: &XrMode,
+    xr_origin: &XrOrigin,
 ) -> Result<XrReferenceSpace, WebXrError> {
-    let space_type = match xr_mode {
-        XrMode::VR => XrReferenceSpaceType::LocalFloor,
-        XrMode::AR => XrReferenceSpaceType::LocalFloor,
-        XrMode::Inline => XrReferenceSpaceType::Viewer,
+    let space_type = match (xr_mode, xr_origin) {
+        (XrMode::VR, XrOrigin::View) => XrReferenceSpaceType::Local,
+        (XrMode::VR, XrOrigin::Seat) => XrReferenceSpaceType::Local, // TODO: Choose on UserAgent
+        (XrMode::VR, XrOrigin::Room) => XrReferenceSpaceType::Local, // TODO: ::FloorBounded?
+        (XrMode::VR, XrOrigin::Other) => XrReferenceSpaceType::Unbounded,
+        (XrMode::AR, XrOrigin::View) => XrReferenceSpaceType::Local,
+        (XrMode::AR, XrOrigin::Seat) => XrReferenceSpaceType::Local, // TODO: Choose on UserAgent
+        (XrMode::AR, XrOrigin::Room) => XrReferenceSpaceType::Local, // TODO: ::FloorBounded?
+        (XrMode::AR, XrOrigin::Other) => XrReferenceSpaceType::Unbounded,
+        (XrMode::Inline, _) => XrReferenceSpaceType::Viewer,
     };
+
     let reference_space = JsFuture::from(session.request_reference_space(space_type))
         .await
         .map_err(|err| WebXrError::JsError(err))?
@@ -318,6 +320,7 @@ fn request_first_web_xr_frame(
     reference_space: XrReferenceSpace,
     app: Arc<Mutex<App>>,
     mode: XrMode,
+    origin: XrOrigin,
 ) -> Result<(), WebXrError> {
     info!("Starting webxr rendering!");
 
@@ -331,7 +334,7 @@ fn request_first_web_xr_frame(
 
     *closure.borrow_mut() = Some(Closure::wrap(Box::new(
         move |time: f64, frame: web_sys::XrFrame| {
-            info!("Update xr frame!");
+            //info!("Update xr frame!");
 
             // TODO: Check if this works or if it has to happen after app.update()
             let frame_index = frame.session().request_animation_frame(
@@ -353,7 +356,7 @@ fn request_first_web_xr_frame(
 
             app.update();
 
-            print_frame_index(frame_index);
+            //print_frame_index(frame_index);
         },
     )
         as Box<dyn FnMut(f64, web_sys::XrFrame)>));
@@ -365,7 +368,8 @@ fn request_first_web_xr_frame(
 
     let mut app = app.lock().unwrap();
 
-    app.world.send_event(WebXrSessionInitialized(mode));
+    app.world
+        .send_event(WebXrSessionInitialized { mode, origin });
 
     //if app.plugins_state() == PluginsState::Ready {
     app.finish();
