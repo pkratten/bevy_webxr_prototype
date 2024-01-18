@@ -89,7 +89,7 @@ impl Plugin for WebXrPlugin {
     }
 }
 
-fn print_projection_matrices(
+pub fn print_projection_matrices(
     projections: Query<&Projection>,
     xr_projections: Query<&WebXrProjection>,
 ) {
@@ -102,7 +102,7 @@ fn print_projection_matrices(
     }
 }
 
-fn print_xr_cameras(cameras: Query<&Camera, With<XrEye>>) {
+pub fn print_xr_cameras(cameras: Query<&Camera, With<XrEye>>) {
     for camera in cameras.iter() {
         info!("{:?}", camera);
     }

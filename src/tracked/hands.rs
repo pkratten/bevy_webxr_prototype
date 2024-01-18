@@ -4,7 +4,7 @@ use bevy_xr::{
     IntoEnum,
 };
 use wasm_bindgen::JsCast;
-use web_sys::{XrFrame, XrHand as WebXrHand, XrHandJoint, XrHandedness, XrJointSpace, XrSpace};
+use web_sys::{XrFrame, XrHand as WebXrHand, XrHandJoint, XrHandedness, XrJointSpace};
 
 use crate::{
     dom_point::{dom_point_to_quat, dom_point_to_vec3},
