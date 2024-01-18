@@ -9,12 +9,12 @@ edition = "2021"
 exclude = ["crates/*"]
 
 [dependencies]
-bevy = { version = "0.12.1", features = ["webgl2"] }
+bevy = { version = "0.11.2", features = ["webgl2"] }
 bevy_xr = { path = "../bevy_xr" }
 
-wgpu-hal = { version = "0.17.2", features = ["gles"] }
-wgpu = "0.17.1"
-glow = "0.13.0"
+wgpu-hal = { version = "0.16.0", features = ["gles"] }
+wgpu = "0.16.0"
+glow = "0.12.1"
 
 thiserror = "1.0.50"
 
@@ -58,6 +58,11 @@ web-sys = { version = "0.3.61", features = [
     "XrVisibilityState",
     "XrWebGlLayer",
     "XrWebGlLayerInit",
+    "XrHand",
+    "XrHandJoint",
+    "XrJointSpace",
+    "XrJointPose",
+    "Gamepad",
     "HtmlButtonElement",
 ] }
 

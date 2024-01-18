@@ -9,7 +9,7 @@ use wasm_bindgen::{prelude::Closure, JsCast, UnwrapThrowExt};
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{
     HtmlButtonElement, HtmlCanvasElement, XrReferenceSpace, XrReferenceSpaceType, XrSession,
-    XrSessionMode,
+    XrSessionInit, XrSessionMode, XrWebGlLayerInit,
 };
 
 ///
@@ -201,11 +201,17 @@ async fn request_session(mode: XrMode) -> Result<XrSession, WebXrError> {
         .navigator()
         .xr();
 
-    let session = wasm_bindgen_futures::JsFuture::from(xr.request_session(match mode {
-        XrMode::VR => XrSessionMode::ImmersiveVr,
-        XrMode::AR => XrSessionMode::ImmersiveAr,
-        XrMode::Inline => XrSessionMode::Inline,
-    }))
+    //js_sys::Array::of1(&"local-floor".into());
+    let features = js_sys::Array::of1(&"hand-tracking".into());
+
+    let session = wasm_bindgen_futures::JsFuture::from(xr.request_session_with_options(
+        match mode {
+            XrMode::VR => XrSessionMode::ImmersiveVr,
+            XrMode::AR => XrSessionMode::ImmersiveAr,
+            XrMode::Inline => XrSessionMode::Inline,
+        },
+        &XrSessionInit::new().optional_features(&features),
+    ))
     .await
     .map(|session| session.into())
     .map_err(|err| WebXrError::SessionRequestError(err));
@@ -366,15 +372,17 @@ fn request_first_web_xr_frame(
 
     print_frame_index(frame_index);
 
-    let mut app = app.lock().unwrap();
+    {
+        let mut app = app.lock().unwrap();
 
-    app.world
-        .send_event(WebXrSessionInitialized { mode, origin });
+        app.world
+            .send_event(WebXrSessionInitialized { mode, origin });
 
-    //if app.plugins_state() == PluginsState::Ready {
-    app.finish();
-    //app.cleanup();
-    //}
+        //if app.plugins_state() == PluginsState::Ready {
+        app.finish();
+        //app.cleanup();
+        //}
+    }
 
     Ok(())
 }

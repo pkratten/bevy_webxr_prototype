@@ -4,8 +4,13 @@ use bevy::{
         camera::{camera_system, CameraProjection, CameraProjectionPlugin},
         view::{update_frusta, VisibilitySystems},
     },
+    transform::TransformSystem,
 };
-use bevy_xr::space::XrOrigin;
+use bevy_xr::{
+    head::XrEye,
+    pointer::{LeftHanded, RightHanded},
+    space::XrOrigin,
+};
 use projection::WebXrProjection;
 
 pub mod error;
@@ -67,12 +72,20 @@ impl Plugin for WebXrPlugin {
                 set_xr_mode,
                 tracked::space::initialize_xr_space,
                 tracked::camera::update_xr_cameras,
-                print_projection_matrices,
+                tracked::hands::update_xr_hands::<LeftHanded>,
+                tracked::hands::update_xr_hands::<RightHanded>,
             )
                 .chain(),
         );
 
-        app.add_systems(PostUpdate, update_frusta::<WebXrProjection>);
+        app.add_systems(
+            PostUpdate,
+            update_frusta::<projection::WebXrProjection>
+                .after(VisibilitySystems::UpdatePerspectiveFrusta)
+                .after(camera_system::<projection::WebXrProjection>)
+                .after(TransformSystem::TransformPropagate)
+                .ambiguous_with(update_frusta::<Projection>),
+        );
     }
 }
 
@@ -81,12 +94,17 @@ fn print_projection_matrices(
     xr_projections: Query<&WebXrProjection>,
 ) {
     for projection in projections.iter() {
-        info!("test");
         info!("{:?}", projection.get_projection_matrix());
     }
 
     for projection in xr_projections.iter() {
         info!("{:?}", projection.get_projection_matrix());
+    }
+}
+
+fn print_xr_cameras(cameras: Query<&Camera, With<XrEye>>) {
+    for camera in cameras.iter() {
+        info!("{:?}", camera);
     }
 }
 
@@ -97,7 +115,7 @@ pub struct WebXrFrame {
 }
 
 fn set_xr_mode(mut event: EventReader<events::WebXrSessionInitialized>, mut commands: Commands) {
-    for event in event.read() {
+    for event in event.iter() {
         commands.insert_resource(match event.mode {
             XrMode::VR => bevy_xr::XrMode::VR,
             XrMode::AR => bevy_xr::XrMode::AR,

@@ -8,8 +8,6 @@ pub struct WebXrProjection {
 
 fn transform_matrix(matrix: &mut Mat4) {
     matrix.y_axis.y = -matrix.y_axis.y;
-    matrix.z_axis.z = 0.;
-    matrix.w_axis.z = 0.01;
 }
 
 impl From<Vec<f32>> for WebXrProjection {
@@ -63,24 +61,24 @@ impl CameraProjection for WebXrProjection {
         1000.0
     }
 
-    fn get_frustum_corners(&self, z_near: f32, z_far: f32) -> [bevy::math::Vec3A; 8] {
-        let ndc_corners = [
-            Vec3A::new(1.0, -1.0, 1.0),   // Bottom-right far
-            Vec3A::new(1.0, 1.0, 1.0),    // Top-right far
-            Vec3A::new(-1.0, 1.0, 1.0),   // Top-left far
-            Vec3A::new(-1.0, -1.0, 1.0),  // Bottom-left far
-            Vec3A::new(1.0, -1.0, -1.0),  // Bottom-right near
-            Vec3A::new(1.0, 1.0, -1.0),   // Top-right near
-            Vec3A::new(-1.0, 1.0, -1.0),  // Top-left near
-            Vec3A::new(-1.0, -1.0, -1.0), // Bottom-left near
-        ];
+    // fn get_frustum_corners(&self, z_near: f32, z_far: f32) -> [bevy::math::Vec3A; 8] {
+    //     let ndc_corners = [
+    //         Vec3A::new(1.0, -1.0, 1.0),   // Bottom-right far
+    //         Vec3A::new(1.0, 1.0, 1.0),    // Top-right far
+    //         Vec3A::new(-1.0, 1.0, 1.0),   // Top-left far
+    //         Vec3A::new(-1.0, -1.0, 1.0),  // Bottom-left far
+    //         Vec3A::new(1.0, -1.0, -1.0),  // Bottom-right near
+    //         Vec3A::new(1.0, 1.0, -1.0),   // Top-right near
+    //         Vec3A::new(-1.0, 1.0, -1.0),  // Top-left near
+    //         Vec3A::new(-1.0, -1.0, -1.0), // Bottom-left near
+    //     ];
 
-        let mut view_space_corners = [Vec3A::ZERO; 8];
-        let inverse_matrix = self.projection_matrix.inverse();
-        for (i, corner) in ndc_corners.into_iter().enumerate() {
-            view_space_corners[i] = inverse_matrix.transform_point3a(corner);
-        }
+    //     let mut view_space_corners = [Vec3A::ZERO; 8];
+    //     let inverse_matrix = self.projection_matrix.inverse();
+    //     for (i, corner) in ndc_corners.into_iter().enumerate() {
+    //         view_space_corners[i] = inverse_matrix.transform_point3a(corner);
+    //     }
 
-        view_space_corners
-    }
+    //     view_space_corners
+    // }
 }

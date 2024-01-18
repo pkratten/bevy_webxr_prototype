@@ -7,14 +7,13 @@ use bevy::{
     },
 };
 use bevy_xr::{
-    handedness::{XrHandedness, XrLeft, XrRight},
+    handedness::{Handedness, LeftHanded, RightHanded},
     head::XrEye,
     space::XrOrigin,
     window::XrWindow,
     XrActive, XrLocal,
 };
 use web_sys::XrView;
-use wgpu::TextureAspect;
 
 use crate::{
     dom_point::{dom_point_to_quat, dom_point_to_vec3},
@@ -38,9 +37,9 @@ pub fn update_xr_cameras(
         ),
         (
             With<XrEye>,
-            With<XrLeft>,
+            With<LeftHanded>,
             With<XrLocal>,
-            Without<XrRight>,
+            Without<RightHanded>,
             Without<XrWindow>,
         ),
     >,
@@ -49,14 +48,14 @@ pub fn update_xr_cameras(
             Entity,
             &mut Transform,
             &mut Camera,
-            //&mut WebXrProjection,
+            &mut WebXrProjection,
             &mut XrActive,
         ),
         (
             With<XrEye>,
-            With<XrRight>,
+            With<RightHanded>,
             With<XrLocal>,
-            Without<XrLeft>,
+            Without<LeftHanded>,
             Without<XrWindow>,
         ),
     >,
@@ -65,7 +64,7 @@ pub fn update_xr_cameras(
             Entity,
             &mut Transform,
             &mut Camera,
-            //&mut WebXrProjection,
+            &mut WebXrProjection,
             &mut XrActive,
         ),
         (With<XrWindow>, With<XrLocal>, Without<XrEye>),
@@ -216,7 +215,7 @@ pub fn update_xr_cameras(
 
                                                             ..default()
                                                         },
-                                                        camera_3d: Camera3d{clear_color: ClearColorConfig::Custom(Color::GOLD), ..default()},
+                                                        camera_3d: Camera3d{clear_color: ClearColorConfig::Custom(Color::NONE), ..default()},
                                                         transform: Transform {
                                                         translation: dom_point_to_vec3(
                                                             &view.transform().position(),
@@ -228,10 +227,10 @@ pub fn update_xr_cameras(
                                                     },
                                                         ..default()
                                                     },
-                                                    WebXrProjection::from(view.projection_matrix()),
+                                                    WebXrProjection::default(),
                                                     XrEye(eye_left_index),
-                                                    XrLeft,
-                                                    XrHandedness::Left,
+                                                    LeftHanded,
+                                                    Handedness::Left,
                                                     XrLocal,
                                                     XrActive(true),
                                                 ));
@@ -248,7 +247,7 @@ pub fn update_xr_cameras(
                                             _,
                                             mut transform,
                                             mut camera,
-                                            //mut projection,
+                                            mut projection,
                                             mut active,
                                         )) = eyes_right.next()
                                         {
@@ -269,7 +268,7 @@ pub fn update_xr_cameras(
                                             });
                                             camera.is_active = true;
                                             active.0 = true;
-                                            //projection.update_matrix(view.projection_matrix());
+                                            projection.update_matrix(view.projection_matrix());
                                         } else {
                                             let mut eye = commands
                                                 .spawn((
@@ -285,7 +284,7 @@ pub fn update_xr_cameras(
                                                             order: i as isize,
                                                             ..default()
                                                         },
-                                                        camera_3d: Camera3d{clear_color: ClearColorConfig::Custom(Color::GOLD), ..default()},
+                                                        camera_3d: Camera3d{clear_color: ClearColorConfig::Custom(Color::NONE), ..default()},
                                                         transform: Transform {
                                                         translation: dom_point_to_vec3(
                                                             &view.transform().position(),
@@ -297,14 +296,14 @@ pub fn update_xr_cameras(
                                                     },
                                                         ..default()
                                                     },
-                                                    //WebXrProjection::from(view.projection_matrix()),
+                                                    WebXrProjection::from(view.projection_matrix()),
                                                     XrEye(eye_right_index),
-                                                    XrRight,
-                                                    XrHandedness::Right,
+                                                    RightHanded,
+                                                    Handedness::Right,
                                                     XrLocal,
                                                     XrActive(true),
                                                 ));
-                                            //eye.remove::<Projection>();
+                                            eye.remove::<Projection>();
                                             eye.log_components();
                                             let eye = eye.id();
 
@@ -317,7 +316,7 @@ pub fn update_xr_cameras(
                                             _,
                                             mut transform,
                                             mut camera,
-                                            //mut projection,
+                                            mut projection,
                                             mut active,
                                         )) = windows.next()
                                         {
@@ -338,7 +337,7 @@ pub fn update_xr_cameras(
                                             });
                                             camera.is_active = true;
                                             active.0 = true;
-                                            //projection.update_matrix(view.projection_matrix());
+                                            projection.update_matrix(view.projection_matrix());
                                         } else {
                                             let mut window = commands
                                                 .spawn((
@@ -354,7 +353,7 @@ pub fn update_xr_cameras(
                                                             order: i as isize,
                                                             ..default()
                                                         },
-                                                        camera_3d: Camera3d{clear_color: ClearColorConfig::Custom(Color::GOLD), ..default()},
+                                                        camera_3d: Camera3d{clear_color: ClearColorConfig::Custom(Color::NONE), ..default()},
                                                         transform: Transform {
                                                         translation: dom_point_to_vec3(
                                                             &view.transform().position(),
@@ -366,12 +365,12 @@ pub fn update_xr_cameras(
                                                     },
                                                         ..default()
                                                     },
-                                                    //WebXrProjection::from(view.projection_matrix()),
+                                                    WebXrProjection::from(view.projection_matrix()),
                                                     XrWindow(window_index),
                                                     XrLocal,
                                                     XrActive(true),
                                                 ));
-                                            //window.remove::<Projection>();
+                                            window.remove::<Projection>();
                                             window.log_components();
                                             let window = window.id();
 
@@ -388,12 +387,12 @@ pub fn update_xr_cameras(
                                 active.0 = false;
                             }
 
-                            for (_, _, mut camera, mut active) in eyes_right {
+                            for (_, _, mut camera, _, mut active) in eyes_right {
                                 camera.is_active = false;
                                 active.0 = false;
                             }
 
-                            for (_, _, mut camera, mut active) in windows {
+                            for (_, _, mut camera, _, mut active) in windows {
                                 camera.is_active = false;
                                 active.0 = false;
                             }
@@ -418,15 +417,6 @@ pub fn update_xr_cameras(
         }
     } else {
         warn!("No XrOrigin!");
-        for (entity, _, _, _, _) in eyes_left.iter() {
-            commands.entity(entity).despawn();
-        }
-        for (entity, _, _, _) in eyes_right.iter() {
-            commands.entity(entity).despawn();
-        }
-        for (entity, _, _, _) in windows.iter() {
-            commands.entity(entity).despawn();
-        }
     }
 
     //There was a problem updating cameras that has been logged as a warning. Disable all cameras:
@@ -435,12 +425,12 @@ pub fn update_xr_cameras(
         active.0 = false;
     }
 
-    for (_, _, mut camera, mut active) in eyes_right.iter_mut() {
+    for (_, _, mut camera, _, mut active) in eyes_right.iter_mut() {
         camera.is_active = false;
         active.0 = false;
     }
 
-    for (_, _, mut camera, mut active) in windows.iter_mut() {
+    for (_, _, mut camera, _, mut active) in windows.iter_mut() {
         camera.is_active = false;
         active.0 = false;
     }
