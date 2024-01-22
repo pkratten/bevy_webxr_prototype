@@ -72,6 +72,7 @@ impl Plugin for WebXrPlugin {
                 set_xr_mode,
                 tracked::space::initialize_xr_space,
                 tracked::camera::update_xr_cameras,
+                tracked::controllers::update_xr_controllers,
                 tracked::hands::update_xr_hands::<LeftHanded>,
                 tracked::hands::update_xr_hands::<RightHanded>,
             )

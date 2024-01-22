@@ -1,4 +1,5 @@
 pub mod camera;
+pub mod controllers;
 pub mod hands;
 pub mod space;
 
