@@ -8,7 +8,7 @@ pub fn initialize_xr_space(
     mut origin: Query<(Entity, &mut XrActive), (With<XrOrigin>, With<XrLocal>)>,
     mut commands: Commands,
 ) {
-    for event in event.iter() {
+    for event in event.read() {
         match origin.get_single_mut() {
             Ok((entity, mut active)) => {
                 commands.entity(entity).insert(event.origin);

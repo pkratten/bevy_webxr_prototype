@@ -73,7 +73,7 @@ pub fn update_xr_controllers(
                                                 active.0 = true;
                                                 commands
                                                     .entity(entity)
-                                                    .insert(XrTrackedObject::LeftController);
+                                                    .insert(XrTrackedObject(i as u8));
                                             }
                                             Err(QuerySingleError::MultipleEntities(_)) => {
                                                 let mut controllers = controller_left.iter_mut();
@@ -91,12 +91,14 @@ pub fn update_xr_controllers(
                                                 active.0 = true;
                                                 commands
                                                     .entity(entity)
-                                                    .insert(XrTrackedObject::LeftController);
+                                                    .insert(XrTrackedObject(i as u8));
                                             }
                                             Err(QuerySingleError::NoEntities(_)) => {
                                                 let entity = commands
                                                     .spawn(
-                                                        XrControllerBundle::<LeftHanded>::default(),
+                                                        XrControllerBundle::<LeftHanded>::default(
+                                                            i as u8,
+                                                        ),
                                                     )
                                                     .id();
                                                 commands.entity(origin.single()).add_child(entity);
@@ -114,7 +116,7 @@ pub fn update_xr_controllers(
                                                 active.0 = true;
                                                 commands
                                                     .entity(entity)
-                                                    .insert(XrTrackedObject::RightController);
+                                                    .insert(XrTrackedObject(i as u8));
                                             }
                                             Err(QuerySingleError::MultipleEntities(_)) => {
                                                 let mut controllers = controller_left.iter_mut();
@@ -132,12 +134,13 @@ pub fn update_xr_controllers(
                                                 active.0 = true;
                                                 commands
                                                     .entity(entity)
-                                                    .insert(XrTrackedObject::RightController);
+                                                    .insert(XrTrackedObject(i as u8));
                                             }
                                             Err(QuerySingleError::NoEntities(_)) => {
                                                 let entity = commands
                                                     .spawn(
                                                         XrControllerBundle::<RightHanded>::default(
+                                                            i as u8,
                                                         ),
                                                     )
                                                     .id();
@@ -157,12 +160,10 @@ pub fn update_xr_controllers(
                                             active.0 = true;
                                             commands
                                                 .entity(entity)
-                                                .insert(XrTrackedObject::Other(i as usize));
+                                                .insert(XrTrackedObject(i as u8));
                                         } else {
                                             let entity = commands
-                                                .spawn(XrControllerHandlessBundle::default(
-                                                    i as usize,
-                                                ))
+                                                .spawn(XrControllerHandlessBundle::default(i as u8))
                                                 .id();
 
                                             controller_order.push(entity);

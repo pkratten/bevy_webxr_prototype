@@ -61,6 +61,8 @@ pub struct WebXrPlugin {
 impl Plugin for WebXrPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(CameraProjectionPlugin::<WebXrProjection>::default());
+        app.add_plugins(bevy_xr::post_process_flip_y::PostProcessFlipYPlugin);
+
         app.insert_resource(self.settings.clone());
         app.set_runner(init::webxr_runner);
 
@@ -116,7 +118,7 @@ pub struct WebXrFrame {
 }
 
 fn set_xr_mode(mut event: EventReader<events::WebXrSessionInitialized>, mut commands: Commands) {
-    for event in event.iter() {
+    for event in event.read() {
         commands.insert_resource(match event.mode {
             XrMode::VR => bevy_xr::XrMode::VR,
             XrMode::AR => bevy_xr::XrMode::AR,

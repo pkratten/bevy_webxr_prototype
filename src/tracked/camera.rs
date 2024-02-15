@@ -233,6 +233,7 @@ pub fn update_xr_cameras(
                                                     Handedness::Left,
                                                     XrLocal,
                                                     XrActive(true),
+                                                    bevy_xr::post_processing_flip_y::PostProcessFlipY,
                                                 ));
                                             eye.remove::<Projection>();
                                             eye.log_components();
@@ -302,6 +303,7 @@ pub fn update_xr_cameras(
                                                     Handedness::Right,
                                                     XrLocal,
                                                     XrActive(true),
+                                                    bevy_xr::post_processing_flip_y::PostProcessFlipY,
                                                 ));
                                             eye.remove::<Projection>();
                                             eye.log_components();
@@ -369,6 +371,7 @@ pub fn update_xr_cameras(
                                                     XrWindow(window_index),
                                                     XrLocal,
                                                     XrActive(true),
+                                                    bevy_xr::post_processing_flip_y::PostProcessFlipY,
                                                 ));
                                             window.remove::<Projection>();
                                             window.log_components();

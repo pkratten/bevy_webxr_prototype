@@ -38,7 +38,6 @@ fn main() {
                 }),
                 ..default()
             })
-            //.disable::<WinitPlugin>()
             .disable::<LogPlugin>(),
     );
 
@@ -53,11 +52,11 @@ fn main() {
     .add_systems(Update, bevy_xr::systems::draw_hand_gizmos)
     .add_systems(
         PreUpdate,
-        bevy_xr::systems::substitute_local_palm::<RightHanded>,
+        bevy_xr::systems::substitute_local_palm::<LeftHanded>,
     )
     .add_systems(
         PreUpdate,
-        bevy_xr::systems::substitute_local_palm::<LeftHanded>,
+        bevy_xr::systems::substitute_local_palm::<RightHanded>,
     )
     .run();
 }
@@ -72,16 +71,16 @@ fn setup(
         ..default()
     });
     // plane
-    // commands.spawn(PbrBundle {
-    //     mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
-    //     material: materials.add(StandardMaterial {
-    //         base_color: Color::rgb(0.3, 0.5, 0.3),
-    //         double_sided: true,
-    //         cull_mode: Some(wgpu::Face::Front),
-    //         ..default()
-    //     }),
-    //     ..default()
-    // });
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
+        material: materials.add(StandardMaterial {
+            base_color: Color::rgb(0.3, 0.5, 0.3),
+            double_sided: true,
+            cull_mode: Some(wgpu::Face::Front),
+            ..default()
+        }),
+        ..default()
+    });
     // cube
     commands.spawn(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
