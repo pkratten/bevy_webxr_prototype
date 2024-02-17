@@ -9,6 +9,7 @@ use bevy::{
 use bevy_xr::{
     handedness::{Handedness, LeftHanded, RightHanded},
     head::XrEye,
+    shaders::PostProcessFlipY,
     space::XrOrigin,
     window::XrWindow,
     XrActive, XrLocal,
@@ -227,13 +228,13 @@ pub fn update_xr_cameras(
                                                     },
                                                         ..default()
                                                     },
-                                                    WebXrProjection::default(),
+                                                    WebXrProjection::from(view.projection_matrix()),
                                                     XrEye(eye_left_index),
                                                     LeftHanded,
                                                     Handedness::Left,
                                                     XrLocal,
                                                     XrActive(true),
-                                                    bevy_xr::post_processing_flip_y::PostProcessFlipY,
+                                                    //PostProcessFlipY,
                                                 ));
                                             eye.remove::<Projection>();
                                             eye.log_components();
@@ -285,7 +286,7 @@ pub fn update_xr_cameras(
                                                             order: i as isize,
                                                             ..default()
                                                         },
-                                                        camera_3d: Camera3d{clear_color: ClearColorConfig::Custom(Color::NONE), ..default()},
+                                                        camera_3d: Camera3d{clear_color: ClearColorConfig::None, ..default()},
                                                         transform: Transform {
                                                         translation: dom_point_to_vec3(
                                                             &view.transform().position(),
@@ -298,12 +299,12 @@ pub fn update_xr_cameras(
                                                         ..default()
                                                     },
                                                     WebXrProjection::from(view.projection_matrix()),
+                                                    PostProcessFlipY,
                                                     XrEye(eye_right_index),
                                                     RightHanded,
                                                     Handedness::Right,
                                                     XrLocal,
                                                     XrActive(true),
-                                                    bevy_xr::post_processing_flip_y::PostProcessFlipY,
                                                 ));
                                             eye.remove::<Projection>();
                                             eye.log_components();
@@ -367,11 +368,11 @@ pub fn update_xr_cameras(
                                                     },
                                                         ..default()
                                                     },
-                                                    WebXrProjection::from(view.projection_matrix()),
+                                                    WebXrProjection::from(view.projection_matrix()),                                                    
+                                                    PostProcessFlipY,
                                                     XrWindow(window_index),
                                                     XrLocal,
                                                     XrActive(true),
-                                                    bevy_xr::post_processing_flip_y::PostProcessFlipY,
                                                 ));
                                             window.remove::<Projection>();
                                             window.log_components();

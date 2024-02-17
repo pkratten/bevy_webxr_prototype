@@ -61,7 +61,7 @@ pub struct WebXrPlugin {
 impl Plugin for WebXrPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(CameraProjectionPlugin::<WebXrProjection>::default());
-        app.add_plugins(bevy_xr::post_process_flip_y::PostProcessFlipYPlugin);
+        app.add_plugins(bevy_xr::shaders::PostProcessFlipYPlugin);
 
         app.insert_resource(self.settings.clone());
         app.set_runner(init::webxr_runner);
@@ -89,6 +89,8 @@ impl Plugin for WebXrPlugin {
                 .after(TransformSystem::TransformPropagate)
                 .ambiguous_with(update_frusta::<Projection>),
         );
+
+        app.add_systems(PostUpdate, print_projection_matrices);
     }
 }
 

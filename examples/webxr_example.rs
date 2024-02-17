@@ -2,15 +2,7 @@
 
 use std::f32::consts::PI;
 
-use bevy::{
-    log::LogPlugin,
-    prelude::*,
-    render::{
-        camera::CameraProjection, settings::WgpuSettings, texture::DefaultImageSampler,
-        RenderPlugin,
-    },
-    winit::WinitPlugin,
-};
+use bevy::{log::LogPlugin, prelude::*};
 use bevy_webxr::{error::WebXrError, WebXrPlugin, WebXrSettings};
 use bevy_xr::{
     pointer::{LeftHanded, RightHanded},
@@ -26,8 +18,6 @@ fn main() {
 
     info!("{:?}", initialize_canvas("bevyxr"));
     info!("HI!");
-
-    app.insert_resource(ClearColor(Color::GOLD));
 
     app.insert_resource(Msaa::Off).add_plugins(
         DefaultPlugins
@@ -66,33 +56,32 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(0., 1.5, 6.).looking_at(Vec3::ZERO, Vec3::Y),
-        ..default()
-    });
+    // commands.spawn(Camera3dBundle {
+    //     transform: Transform::from_xyz(0., 1.5, 6.).looking_at(Vec3::ZERO, Vec3::Y),
+    //     ..default()
+    // });
+
     // plane
     commands.spawn(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
         material: materials.add(StandardMaterial {
             base_color: Color::rgb(0.3, 0.5, 0.3),
-            double_sided: true,
-            cull_mode: Some(wgpu::Face::Front),
             ..default()
         }),
         ..default()
     });
+
     // cube
     commands.spawn(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
         material: materials.add(StandardMaterial {
             base_color: Color::rgb(0.8, 0.7, 0.6),
-            double_sided: true,
-            cull_mode: Some(wgpu::Face::Front),
             ..default()
         }),
         transform: Transform::from_xyz(0.0, 0.5, 0.0),
         ..default()
     });
+
     // light
     commands.spawn(PointLightBundle {
         point_light: PointLight {
@@ -100,16 +89,7 @@ fn setup(
             shadows_enabled: true,
             ..default()
         },
-        transform: Transform::from_xyz(4.0, 8.0, 4.0),
-        ..default()
-    });
-    commands.spawn(PointLightBundle {
-        point_light: PointLight {
-            intensity: 1500.0,
-            shadows_enabled: true,
-            ..default()
-        },
-        transform: Transform::from_xyz(-4.0, -8.0, -4.0),
+        transform: Transform::from_xyz(4.0, -8.0, 4.0),
         ..default()
     });
 
@@ -180,9 +160,9 @@ fn rotate_camera(
     mut query: Query<&mut Transform, (With<Camera>, Without<XrLocal>)>,
     time: Res<Time>,
 ) {
-    let mut transform = query.single_mut();
-
-    transform.rotate_around(Vec3::ZERO, Quat::from_rotation_y(time.delta_seconds() / 2.));
+    if let Ok(mut transform) = query.get_single_mut() {
+        transform.rotate_around(Vec3::ZERO, Quat::from_rotation_y(time.delta_seconds() / 2.));
+    }
 }
 
 pub fn initialize_canvas(canvas: &str) -> Result<web_sys::HtmlCanvasElement, WebXrError> {

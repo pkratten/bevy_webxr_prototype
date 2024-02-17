@@ -280,6 +280,8 @@ async fn initialize_render_context(
     );
 
     render_state_init.base_layer(Some(&web_gl_layer));
+    render_state_init.depth_near(0.001);
+    // render_state_init.depth_far(0.01);
 
     info!(
         "Render state init after base layer: {:?}",

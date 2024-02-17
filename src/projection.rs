@@ -7,7 +7,8 @@ pub struct WebXrProjection {
 }
 
 fn transform_matrix(matrix: &mut Mat4) {
-    //matrix.y_axis.y = -matrix.y_axis.y;
+    matrix.z_axis.z = 0.0;
+    matrix.w_axis.z = -matrix.w_axis.z;
 }
 
 impl From<Vec<f32>> for WebXrProjection {
@@ -46,7 +47,7 @@ impl CameraProjection for WebXrProjection {
     }
 
     /// This projection gets updated by the update_xr_cameras system.
-    fn update(&mut self, width: f32, height: f32) {}
+    fn update(&mut self, _width: f32, _height: f32) {}
 
     fn far(&self) -> f32 {
         let far = self.projection_matrix.to_cols_array()[14]
@@ -56,12 +57,12 @@ impl CameraProjection for WebXrProjection {
 
         //1. / c
 
-        //far
+        far
 
-        1000.0
+        //1000.0
     }
 
-    fn get_frustum_corners(&self, z_near: f32, z_far: f32) -> [bevy::math::Vec3A; 8] {
+    fn get_frustum_corners(&self, _z_near: f32, _z_far: f32) -> [bevy::math::Vec3A; 8] {
         let ndc_corners = [
             Vec3A::new(1.0, -1.0, 1.0),   // Bottom-right far
             Vec3A::new(1.0, 1.0, 1.0),    // Top-right far
