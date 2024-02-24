@@ -3,7 +3,7 @@ use bevy_xr::space::XrOrigin;
 
 use crate::XrMode;
 
-pub fn add_events(app: &mut App) {
+pub(crate) fn add_events(app: &mut App) {
     app.add_event::<WebXrSessionInitialized>();
 }
 

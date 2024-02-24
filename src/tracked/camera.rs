@@ -1,5 +1,4 @@
 use bevy::{
-    core_pipeline::clear_color::ClearColorConfig,
     prelude::*,
     render::{
         camera::{ManualTextureView, ManualTextureViewHandle, ManualTextureViews, Viewport},
@@ -9,7 +8,6 @@ use bevy::{
 use bevy_xr::{
     handedness::{Handedness, LeftHanded, RightHanded},
     head::XrEye,
-    shaders::PostProcessFlipY,
     space::XrOrigin,
     window::XrWindow,
     XrActive, XrLocal,
@@ -22,10 +20,10 @@ use crate::{
     WebXrFrame,
 };
 
-const FRAMEBUFFER_HANDLE: ManualTextureViewHandle = ManualTextureViewHandle(5724242);
+pub(crate) const FRAMEBUFFER_HANDLE: ManualTextureViewHandle = ManualTextureViewHandle(5724242);
 const TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
 
-pub fn update_xr_cameras(
+pub(crate) fn update_xr_cameras(
     xr_frame: Option<NonSend<WebXrFrame>>,
     origin: Query<Entity, (With<XrOrigin>, With<XrLocal>, With<XrActive>)>,
     mut eyes_left: Query<
@@ -116,7 +114,6 @@ pub fn update_xr_cameras(
                                                 depth: 1,
                                             },
                                             drop_guard: None,
-                                            is_cubemap: false,
                                         },
                                         &wgpu::TextureDescriptor {
                                             label: Some("webxr framebuffer (color)"),
@@ -131,7 +128,8 @@ pub fn update_xr_cameras(
                                             format: TEXTURE_FORMAT,
                                             view_formats: &[TEXTURE_FORMAT],
                                             usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                                                | wgpu::TextureUsages::COPY_SRC,
+                                                | wgpu::TextureUsages::COPY_SRC
+                                                | wgpu::TextureUsages::STORAGE_BINDING,
                                         },
                                     )
                             };
@@ -213,10 +211,9 @@ pub fn update_xr_cameras(
                                                             }),
                                                             target: bevy::render::camera::RenderTarget::TextureView(FRAMEBUFFER_HANDLE),
                                                             order: i as isize,
-
+                                                            clear_color: ClearColorConfig::Custom(Color::NONE),
                                                             ..default()
                                                         },
-                                                        camera_3d: Camera3d{clear_color: ClearColorConfig::Custom(Color::NONE), ..default()},
                                                         transform: Transform {
                                                         translation: dom_point_to_vec3(
                                                             &view.transform().position(),
@@ -234,7 +231,6 @@ pub fn update_xr_cameras(
                                                     Handedness::Left,
                                                     XrLocal,
                                                     XrActive(true),
-                                                    //PostProcessFlipY,
                                                 ));
                                             eye.remove::<Projection>();
                                             eye.log_components();
@@ -284,9 +280,9 @@ pub fn update_xr_cameras(
                                                             }),
                                                             target: bevy::render::camera::RenderTarget::TextureView(FRAMEBUFFER_HANDLE),
                                                             order: i as isize,
+                                                            clear_color: ClearColorConfig::None,
                                                             ..default()
                                                         },
-                                                        camera_3d: Camera3d{clear_color: ClearColorConfig::None, ..default()},
                                                         transform: Transform {
                                                         translation: dom_point_to_vec3(
                                                             &view.transform().position(),
@@ -299,7 +295,6 @@ pub fn update_xr_cameras(
                                                         ..default()
                                                     },
                                                     WebXrProjection::from(view.projection_matrix()),
-                                                    PostProcessFlipY,
                                                     XrEye(eye_right_index),
                                                     RightHanded,
                                                     Handedness::Right,
@@ -354,9 +349,9 @@ pub fn update_xr_cameras(
                                                             }),
                                                             target: bevy::render::camera::RenderTarget::TextureView(FRAMEBUFFER_HANDLE),
                                                             order: i as isize,
+                                                            clear_color: ClearColorConfig::Custom(Color::NONE),
                                                             ..default()
                                                         },
-                                                        camera_3d: Camera3d{clear_color: ClearColorConfig::Custom(Color::NONE), ..default()},
                                                         transform: Transform {
                                                         translation: dom_point_to_vec3(
                                                             &view.transform().position(),
@@ -368,8 +363,7 @@ pub fn update_xr_cameras(
                                                     },
                                                         ..default()
                                                     },
-                                                    WebXrProjection::from(view.projection_matrix()),                                                    
-                                                    PostProcessFlipY,
+                                                    WebXrProjection::from(view.projection_matrix()),
                                                     XrWindow(window_index),
                                                     XrLocal,
                                                     XrActive(true),

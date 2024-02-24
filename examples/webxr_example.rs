@@ -56,10 +56,10 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    // commands.spawn(Camera3dBundle {
-    //     transform: Transform::from_xyz(0., 1.5, 6.).looking_at(Vec3::ZERO, Vec3::Y),
-    //     ..default()
-    // });
+    commands.spawn(Camera3dBundle {
+        transform: Transform::from_xyz(0., 1.5, 6.).looking_at(Vec3::ZERO, Vec3::Y),
+        ..default()
+    });
 
     // plane
     commands.spawn(PbrBundle {
@@ -146,10 +146,10 @@ fn gizmos(mut gizmos: Gizmos, time: Res<Time>) {
     }
 
     // Circles have 32 line-segments by default.
-    gizmos.circle(Vec3::ZERO, Vec3::Y, 3., Color::BLACK);
+    gizmos.circle(Vec3::ZERO, Direction3d::Y, 3., Color::BLACK);
     // You may want to increase this for larger circles or spheres.
     gizmos
-        .circle(Vec3::ZERO, Vec3::Y, 3.1, Color::NAVY)
+        .circle(Vec3::ZERO, Direction3d::Y, 3.1, Color::NAVY)
         .segments(64);
     gizmos
         .sphere(Vec3::ZERO, Quat::IDENTITY, 3.2, Color::BLACK)

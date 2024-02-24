@@ -1,7 +1,11 @@
 use bevy::{
+    input::InputSystem,
     prelude::*,
     render::{
-        camera::{camera_system, CameraProjection, CameraProjectionPlugin},
+        camera::{
+            camera_system, CameraProjection, CameraProjectionPlugin, ManualTextureView,
+            ManualTextureViewHandle, NormalizedRenderTarget,
+        },
         view::{update_frusta, VisibilitySystems},
     },
     transform::TransformSystem,
@@ -9,6 +13,7 @@ use bevy::{
 use bevy_xr::{
     head::XrEye,
     pointer::{LeftHanded, RightHanded},
+    shaders::flip_render_target::{self, FlipRenderTargets},
     space::XrOrigin,
 };
 use projection::WebXrProjection;
@@ -61,7 +66,15 @@ pub struct WebXrPlugin {
 impl Plugin for WebXrPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(CameraProjectionPlugin::<WebXrProjection>::default());
-        app.add_plugins(bevy_xr::shaders::PostProcessFlipYPlugin);
+        //app.add_plugins(bevy_xr::shaders::flip_render_target::FlipRenderTargetPlugin);
+        let mut flip_render_targets = FlipRenderTargets::default();
+        flip_render_targets.insert(
+            NormalizedRenderTarget::TextureView(tracked::camera::FRAMEBUFFER_HANDLE),
+            flip_render_target::FlipDirection::Y,
+        );
+        //app.insert_resource(flip_render_targets);
+
+        app.add_plugins(bevy_xr::controller_input::XrControllerInputPlugin);
 
         app.insert_resource(self.settings.clone());
         app.set_runner(init::webxr_runner);
@@ -95,7 +108,7 @@ impl Plugin for WebXrPlugin {
     }
 }
 
-pub fn print_projection_matrices(
+fn print_projection_matrices(
     projections: Query<&Projection>,
     xr_projections: Query<&WebXrProjection>,
 ) {
@@ -108,7 +121,7 @@ pub fn print_projection_matrices(
     }
 }
 
-pub fn print_xr_cameras(cameras: Query<&Camera, With<XrEye>>) {
+fn print_xr_cameras(cameras: Query<&Camera, With<XrEye>>) {
     for camera in cameras.iter() {
         info!("{:?}", camera);
     }
