@@ -53,13 +53,7 @@ impl CameraProjection for WebXrProjection {
         let far = self.projection_matrix.to_cols_array()[14]
             / (self.projection_matrix.to_cols_array()[10] + 1.0);
 
-        //let c = self.projection_matrix.y_axis.y;
-
-        //1. / c
-
         far
-
-        //1000.0
     }
 
     fn get_frustum_corners(&self, _z_near: f32, _z_far: f32) -> [bevy::math::Vec3A; 8] {
