@@ -1,6 +1,7 @@
 use crate::{
     error::WebXrError, events::WebXrSessionInitialized, WebXrFrame, WebXrSettings, XrMode,
 };
+use bevy::app::PluginsState;
 use bevy::{prelude::*, tasks::AsyncComputeTaskPool};
 use bevy_xr::space::XrOrigin;
 use std::sync::{Arc, Mutex};
@@ -9,7 +10,7 @@ use wasm_bindgen::{prelude::Closure, JsCast, UnwrapThrowExt};
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{
     HtmlButtonElement, HtmlCanvasElement, XrReferenceSpace, XrReferenceSpaceType, XrSession,
-    XrSessionInit, XrSessionMode, XrWebGlLayerInit,
+    XrSessionInit, XrSessionMode,
 };
 
 ///
@@ -345,7 +346,7 @@ fn request_first_web_xr_frame(
             //info!("Update xr frame!");
 
             // TODO: Check if this works or if it has to happen after app.update()
-            let frame_index = frame.session().request_animation_frame(
+            let _frame_index = frame.session().request_animation_frame(
                 closure_clone
                     .borrow()
                     .as_ref()
@@ -380,10 +381,10 @@ fn request_first_web_xr_frame(
         app.world
             .send_event(WebXrSessionInitialized { mode, origin });
 
-        //if app.plugins_state() == PluginsState::Ready {
-        app.finish();
-        //app.cleanup();
-        //}
+        if app.plugins_state() == PluginsState::Ready {
+            app.finish();
+            app.cleanup();
+        }
     }
 
     Ok(())

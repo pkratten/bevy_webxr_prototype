@@ -1,6 +1,6 @@
 use bevy::{ecs::query::QuerySingleError, prelude::*};
 use bevy_xr::{
-    hands::{finger::*, finger_joint::*, hand_joint::*, Hand, *},
+    hands::{finger::*, finger_joint::*, hand_joint::*, *},
     IntoEnum,
 };
 use wasm_bindgen::JsCast;

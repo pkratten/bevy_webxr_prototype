@@ -13,6 +13,7 @@ use bevy_xr::{
     XrActive, XrLocal,
 };
 use web_sys::XrView;
+use wgpu::{BlendState, TextureUsages};
 
 use crate::{
     dom_point::{dom_point_to_quat, dom_point_to_vec3},
@@ -127,9 +128,9 @@ pub(crate) fn update_xr_cameras(
                                             dimension: wgpu::TextureDimension::D2,
                                             format: TEXTURE_FORMAT,
                                             view_formats: &[TEXTURE_FORMAT],
-                                            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                                                | wgpu::TextureUsages::COPY_SRC
-                                                | wgpu::TextureUsages::STORAGE_BINDING,
+                                            usage: TextureUsages::RENDER_ATTACHMENT
+                                                | TextureUsages::TEXTURE_BINDING
+                                                | TextureUsages::COPY_SRC,
                                         },
                                     )
                             };
