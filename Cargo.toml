@@ -18,10 +18,6 @@ glow = "0.13.0"
 
 thiserror = "1.0.50"
 
-futures = "0.3.26"
-js-sys = "0.3"
-wasm-bindgen = "0.2.87"
-wasm-bindgen-futures = "0.4"
 web-sys = { version = "0.3.61", features = [
     "Window",
     "Navigator",
@@ -63,8 +59,13 @@ web-sys = { version = "0.3.61", features = [
     "XrJointSpace",
     "XrJointPose",
     "Gamepad",
+    "GamepadButton",
     "HtmlButtonElement",
 ] }
+futures = "0.3.26"
+js-sys = "0.3"
+wasm-bindgen = "0.2.87"
+wasm-bindgen-futures = "0.4"
 
 
 [[example]]

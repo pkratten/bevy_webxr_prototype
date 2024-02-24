@@ -73,10 +73,13 @@ impl Plugin for WebXrPlugin {
             (
                 set_xr_mode,
                 tracked::space::initialize_xr_space,
-                tracked::camera::update_xr_cameras,
-                tracked::controllers::update_xr_controllers,
-                tracked::hands::update_xr_hands::<LeftHanded>,
-                tracked::hands::update_xr_hands::<RightHanded>,
+                (
+                    tracked::camera::update_xr_cameras,
+                    tracked::controllers::update_xr_controllers.before(InputSystem),
+                    tracked::hands::update_xr_hands::<LeftHanded>.in_set(InputSystem),
+                    tracked::hands::update_xr_hands::<RightHanded>.in_set(InputSystem),
+                )
+                    .after(tracked::space::initialize_xr_space),
             )
                 .chain(),
         );
@@ -89,8 +92,6 @@ impl Plugin for WebXrPlugin {
                 .after(TransformSystem::TransformPropagate)
                 .ambiguous_with(update_frusta::<Projection>),
         );
-
-        app.add_systems(PostUpdate, print_projection_matrices);
     }
 }
 
