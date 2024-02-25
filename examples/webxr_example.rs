@@ -39,14 +39,6 @@ fn main() {
     .add_systems(Startup, setup)
     .add_systems(Update, (gizmos, rotate_camera))
     .add_systems(Update, bevy_xr::systems::draw_hand_gizmos)
-    .add_systems(
-        PreUpdate,
-        bevy_xr::systems::substitute_local_palm::<LeftHanded>,
-    )
-    .add_systems(
-        PreUpdate,
-        bevy_xr::systems::substitute_local_palm::<RightHanded>,
-    )
     .run();
 }
 

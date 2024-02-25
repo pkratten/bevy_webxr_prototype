@@ -53,7 +53,7 @@ impl Default for WebXrSettings {
             inline_supported: false, // Not implemented yet.
             vr_button: "vr_button".to_string(),
             ar_button: "ar_button".to_string(),
-            canvas: "bevyxr".to_string(),
+            canvas: "canvas[alt=\"App\"]".to_string(),
             origin: XrOrigin::Room,
         }
     }
@@ -87,13 +87,12 @@ impl Plugin for WebXrPlugin {
             (
                 set_xr_mode,
                 tracked::space::initialize_xr_space,
-                (
-                    tracked::camera::update_xr_cameras,
-                    tracked::controllers::update_xr_controllers.before(InputSystem),
-                    tracked::hands::update_xr_hands::<LeftHanded>.in_set(InputSystem),
-                    tracked::hands::update_xr_hands::<RightHanded>.in_set(InputSystem),
-                )
-                    .after(tracked::space::initialize_xr_space),
+                tracked::camera::update_xr_cameras,
+                tracked::controllers::update_xr_controllers.before(InputSystem),
+                tracked::hands::update_xr_hands::<LeftHanded>.in_set(InputSystem),
+                tracked::hands::update_xr_hands::<RightHanded>.in_set(InputSystem),
+                bevy_xr::systems::substitute_local_palm::<LeftHanded>.in_set(InputSystem),
+                bevy_xr::systems::substitute_local_palm::<RightHanded>.in_set(InputSystem),
             )
                 .chain(),
         );
@@ -106,25 +105,6 @@ impl Plugin for WebXrPlugin {
                 .after(TransformSystem::TransformPropagate)
                 .ambiguous_with(update_frusta::<Projection>),
         );
-    }
-}
-
-fn print_projection_matrices(
-    projections: Query<&Projection>,
-    xr_projections: Query<&WebXrProjection>,
-) {
-    for projection in projections.iter() {
-        info!("{:?}", projection.get_projection_matrix());
-    }
-
-    for projection in xr_projections.iter() {
-        info!("{:?}", projection.get_projection_matrix());
-    }
-}
-
-fn print_xr_cameras(cameras: Query<&Camera, With<XrEye>>) {
-    for camera in cameras.iter() {
-        info!("{:?}", camera);
     }
 }
 
