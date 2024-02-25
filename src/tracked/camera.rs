@@ -1,9 +1,8 @@
 use bevy::{
-    prelude::*,
-    render::{
+    core_pipeline::clear_color::ClearColorConfig, prelude::*, render::{
         camera::{ManualTextureView, ManualTextureViewHandle, ManualTextureViews, Viewport},
         renderer::RenderDevice,
-    },
+    }
 };
 use bevy_xr::{
     handedness::{Handedness, LeftHanded, RightHanded},
@@ -115,6 +114,7 @@ pub(crate) fn update_xr_cameras(
                                                 depth: 1,
                                             },
                                             drop_guard: None,
+                                            is_cubemap: false,
                                         },
                                         &wgpu::TextureDescriptor {
                                             label: Some("webxr framebuffer (color)"),
@@ -212,6 +212,10 @@ pub(crate) fn update_xr_cameras(
                                                             }),
                                                             target: bevy::render::camera::RenderTarget::TextureView(FRAMEBUFFER_HANDLE),
                                                             order: i as isize,
+                                                            
+                                                            ..default()
+                                                        },
+                                                        camera_3d: Camera3d{
                                                             clear_color: ClearColorConfig::Custom(Color::NONE),
                                                             ..default()
                                                         },
@@ -281,6 +285,9 @@ pub(crate) fn update_xr_cameras(
                                                             }),
                                                             target: bevy::render::camera::RenderTarget::TextureView(FRAMEBUFFER_HANDLE),
                                                             order: i as isize,
+                                                            ..default()
+                                                        },
+                                                        camera_3d: Camera3d{
                                                             clear_color: ClearColorConfig::None,
                                                             ..default()
                                                         },
@@ -350,6 +357,10 @@ pub(crate) fn update_xr_cameras(
                                                             }),
                                                             target: bevy::render::camera::RenderTarget::TextureView(FRAMEBUFFER_HANDLE),
                                                             order: i as isize,
+                                                            
+                                                            ..default()
+                                                        },
+                                                        camera_3d: Camera3d{
                                                             clear_color: ClearColorConfig::Custom(Color::NONE),
                                                             ..default()
                                                         },

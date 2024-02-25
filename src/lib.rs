@@ -66,13 +66,13 @@ pub struct WebXrPlugin {
 impl Plugin for WebXrPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(CameraProjectionPlugin::<WebXrProjection>::default());
-        //app.add_plugins(bevy_xr::shaders::flip_render_target::FlipRenderTargetPlugin);
+        app.add_plugins(bevy_xr::shaders::flip_render_target::FlipRenderTargetPlugin);
         let mut flip_render_targets = FlipRenderTargets::default();
         flip_render_targets.insert(
             NormalizedRenderTarget::TextureView(tracked::camera::FRAMEBUFFER_HANDLE),
             flip_render_target::FlipDirection::Y,
         );
-        //app.insert_resource(flip_render_targets);
+        app.insert_resource(flip_render_targets);
 
         app.add_plugins(bevy_xr::controller_input::XrControllerInputPlugin);
 
