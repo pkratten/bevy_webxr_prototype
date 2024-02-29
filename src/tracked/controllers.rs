@@ -70,7 +70,7 @@ pub fn update_xr_controllers(
 
             for i in 0..input_sources.length() {
                 if let Some(input_source) = input_sources.get(i) {
-                    if let Some(gamepad) = input_source.gamepad() {
+                    if let (Some(gamepad), None) = (input_source.gamepad(), input_source.hand()) {
                         if let Some(space) = input_source.grip_space() {
                             if let Some(pose) = frame
                                 .webxr_frame

@@ -2,22 +2,16 @@ use bevy::{
     input::InputSystem,
     prelude::*,
     render::{
-        camera::{
-            camera_system, CameraProjection, CameraProjectionPlugin, ManualTextureView,
-            ManualTextureViewHandle, NormalizedRenderTarget,
-        },
+        camera::{camera_system, CameraProjectionPlugin},
         view::{update_frusta, VisibilitySystems},
     },
     transform::TransformSystem,
 };
 use bevy_xr::{
-    head::XrEye,
     pointer::{LeftHanded, RightHanded},
-    shaders::flip_render_targets_y::FlipRenderTargetsY,
     space::XrOrigin,
 };
 use projection::WebXrProjection;
-use tracked::camera;
 
 pub mod error;
 pub mod events;
@@ -67,13 +61,7 @@ pub struct WebXrPlugin {
 impl Plugin for WebXrPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(CameraProjectionPlugin::<WebXrProjection>::default());
-
-        app.add_plugins(bevy_xr::shaders::flip_render_targets_y::FlipRenderTargetYPlugin);
-        let mut render_targets = FlipRenderTargetsY::default();
-        render_targets.insert(NormalizedRenderTarget::TextureView(
-            camera::FRAMEBUFFER_HANDLE,
-        ));
-        app.insert_resource(render_targets);
+        app.add_plugins(bevy_xr::shaders::PostProcessFlipYPlugin);
 
         app.add_plugins(bevy_xr::controller_input::XrControllerInputPlugin);
 

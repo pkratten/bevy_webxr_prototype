@@ -71,3 +71,7 @@ wasm-bindgen-futures = "0.4"
 [[example]]
 name = "webxr_example"
 path = "examples/webxr_example.rs"
+
+[[example]]
+name = "balloons"
+path = "examples/balloons.rs"
