@@ -10,7 +10,7 @@ exclude = ["crates/*"]
 
 [dependencies]
 bevy = { version = "0.12.1", features = ["webgl2"] }
-bevy_xr = { path = "../bevy_xr" }
+bevy_xr = { path = "../bevy_xr_prototype" }
 
 wgpu-hal = { version = "0.17.2", features = ["gles"] }
 wgpu = "0.17.1"
