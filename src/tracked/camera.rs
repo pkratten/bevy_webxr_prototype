@@ -5,7 +5,7 @@ use bevy::{
     }
 };
 use bevy_xr::{
-    handedness::{Handedness, LeftHanded, RightHanded}, head::XrEye, shaders::PostProcessFlipY, space::XrOrigin, window::XrWindow, XrActive, XrLocal
+    handedness::{Handedness, LeftHanded, RightHanded}, head::XrEye, render::FlipView, space::XrOrigin, window::XrWindow, XrActive, XrLocal
 };
 use web_sys::XrView;
 use wgpu::TextureUsages;
@@ -300,7 +300,7 @@ pub(crate) fn update_xr_cameras(
                                                         ..default()
                                                     },
                                                     WebXrProjection::from(view.projection_matrix()),
-                                                    PostProcessFlipY,
+                                                    FlipView::Y,
                                                     XrEye(eye_right_index),
                                                     RightHanded,
                                                     Handedness::Right,
@@ -374,7 +374,7 @@ pub(crate) fn update_xr_cameras(
                                                         ..default()
                                                     },
                                                     WebXrProjection::from(view.projection_matrix()),
-                                                    PostProcessFlipY,
+                                                    FlipView::Y,
                                                     XrWindow(window_index),
                                                     XrLocal,
                                                     XrActive(true),
