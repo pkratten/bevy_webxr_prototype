@@ -9,16 +9,17 @@ edition = "2021"
 exclude = ["crates/*"]
 
 [dependencies]
-bevy = { version = "0.12.1", features = ["webgl2"] }
+#bevy = { version = "0.13.1", features = ["webgl2"] }
+bevy = { git = "https://github.com/bevyengine/bevy", features = ["webgl2"] }
 bevy_xr = { path = "../bevy_xr" }
 
-wgpu-hal = { version = "0.17.2", features = ["gles"] }
-wgpu = "0.17.1"
-glow = "0.13.0"
+wgpu-hal = { version = "0.19.3", features = ["gles"] }
+wgpu = "0.19.3"
+glow = "0.13.1"
 
-thiserror = "1.0.50"
+thiserror = "1.0.58"
 
-web-sys = { version = "0.3.61", features = [
+web-sys = { version = "0.3.69", features = [
     "Window",
     "Navigator",
     "XrBoundedReferenceSpace",
@@ -62,10 +63,10 @@ web-sys = { version = "0.3.61", features = [
     "GamepadButton",
     "HtmlButtonElement",
 ] }
-futures = "0.3.26"
-js-sys = "0.3"
-wasm-bindgen = "0.2.87"
-wasm-bindgen-futures = "0.4"
+futures = "0.3.30"
+js-sys = "0.3.69"
+wasm-bindgen = "0.2.92"
+wasm-bindgen-futures = "0.4.42"
 
 
 [[example]]

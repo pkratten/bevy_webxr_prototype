@@ -2,6 +2,9 @@ use crate::{
     error::WebXrError, events::WebXrSessionInitialized, WebXrFrame, WebXrSettings, XrMode,
 };
 use bevy::app::PluginsState;
+use bevy::ecs::schedule::ScheduleLabel;
+use bevy::render::render_graph::RenderLabel;
+use bevy::render::RenderApp;
 use bevy::{prelude::*, tasks::AsyncComputeTaskPool};
 use bevy_xr::space::XrOrigin;
 use std::sync::{Arc, Mutex};
@@ -365,6 +368,12 @@ fn request_first_web_xr_frame(
 
             app.update();
 
+            if let Ok(render_app) = app.get_sub_app_mut(RenderApp) {
+                render_app.add_schedule(Schedule::new(Empty));
+                render_app.main_schedule_label = Empty.intern();
+                render_app.world.run_schedule(bevy::render::Render)
+            }
+
             //print_frame_index(frame_index);
         },
     )
@@ -396,3 +405,6 @@ fn print_frame_index(frame_index: u32) {
     string.push_str(" requested!");
     info!(string);
 }
+
+#[derive(ScheduleLabel, Debug, Hash, PartialEq, Eq, Clone)]
+struct Empty;

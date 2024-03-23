@@ -136,11 +136,13 @@ fn thumbs_up_gesture<Handed: HandednessMarker>(
             });
             *was_thumbs_up = true;
         }
-        (true, true) => events.send(ThumbsUpEvent {
-            entity,
-            position: position.clone(),
-            state: EventState::Stay,
-        }),
+        (true, true) => {
+            events.send(ThumbsUpEvent {
+                entity,
+                position: position.clone(),
+                state: EventState::Stay,
+            });
+        }
         (false, true) => {
             events.send(ThumbsUpEvent {
                 entity,
@@ -190,11 +192,13 @@ fn controller_trigger<Handed: HandednessMarker>(
             });
             *was_pressed = true;
         }
-        (true, true) => events.send(ControllerTriggerEvent {
-            entity,
-            position: position.clone(),
-            state: EventState::Stay,
-        }),
+        (true, true) => {
+            events.send(ControllerTriggerEvent {
+                entity,
+                position: position.clone(),
+                state: EventState::Stay,
+            });
+        }
         (false, true) => {
             events.send(ControllerTriggerEvent {
                 entity,
@@ -298,10 +302,7 @@ fn balloons(
             let mesh_handle = if let Some(mesh) = mesh.clone() {
                 mesh
             } else {
-                let handle = meshes.add(Mesh::from(shape::UVSphere {
-                    radius: 0.5,
-                    ..default()
-                }));
+                let handle = meshes.add(Sphere::new(0.5).mesh().ico(5).unwrap());
                 *mesh = Some(handle.clone());
                 handle
             };
@@ -310,7 +311,7 @@ fn balloons(
                 material
             } else {
                 let handle = materials.add(StandardMaterial {
-                    base_color: Color::RED,
+                    base_color: LinearRgba::RED.into(),
                     ..default()
                 });
                 *material = Some(handle.clone());

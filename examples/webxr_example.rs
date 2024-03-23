@@ -54,7 +54,7 @@ fn setup(
 
     // plane
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
+        mesh: meshes.add(Mesh::from(Plane3d::default().mesh().size(5.0, 5.0))),
         material: materials.add(StandardMaterial {
             base_color: Color::rgb(0.3, 0.5, 0.3),
             ..default()
@@ -64,7 +64,7 @@ fn setup(
 
     // cube
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+        mesh: meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
         material: materials.add(StandardMaterial {
             base_color: Color::rgb(0.8, 0.7, 0.6),
             ..default()
@@ -123,27 +123,27 @@ fn gizmos(mut gizmos: Gizmos, time: Res<Time>) {
         Vec3::new(time.elapsed_seconds().cos() * 2.5, 1., 0.),
         Quat::from_rotation_y(PI / 2.),
         Vec2::splat(2.),
-        Color::GREEN,
+        LinearRgba::GREEN,
     );
 
-    gizmos.sphere(Vec3::new(1., 0.5, 0.), Quat::IDENTITY, 0.5, Color::RED);
+    gizmos.sphere(Vec3::new(1., 0.5, 0.), Quat::IDENTITY, 0.5, LinearRgba::RED);
 
     for y in [0., 0.5, 1.] {
         gizmos.ray(
             Vec3::new(1., y, 0.),
             Vec3::new(-3., (time.elapsed_seconds() * 3.).sin(), 0.),
-            Color::BLUE,
+            LinearRgba::BLUE,
         );
     }
 
     // Circles have 32 line-segments by default.
-    gizmos.circle(Vec3::ZERO, Vec3::Y, 3., Color::BLACK);
+    gizmos.circle(Vec3::ZERO, Dir3::Y, 3., LinearRgba::BLACK);
     // You may want to increase this for larger circles or spheres.
     gizmos
-        .circle(Vec3::ZERO, Vec3::Y, 3.1, Color::NAVY)
+        .circle(Vec3::ZERO, Dir3::Y, 3.1, LinearRgba::BLUE)
         .segments(64);
     gizmos
-        .sphere(Vec3::ZERO, Quat::IDENTITY, 3.2, Color::BLACK)
+        .sphere(Vec3::ZERO, Quat::IDENTITY, 3.2, LinearRgba::BLACK)
         .circle_segments(64);
 }
 
