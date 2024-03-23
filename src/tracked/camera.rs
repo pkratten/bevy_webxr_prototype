@@ -1,11 +1,10 @@
 use bevy::{
     core_pipeline::clear_color::ClearColorConfig, prelude::*, render::{
-        camera::{ManualTextureView, ManualTextureViewHandle, ManualTextureViews, Viewport},
-        renderer::RenderDevice,
-    }
+        camera::Viewport, render_resource::Texture, renderer::RenderDevice
+    }, 
 };
 use bevy_xr::{
-    handedness::{Handedness, LeftHanded, RightHanded}, head::XrEye, shaders::PostProcessFlipY, space::XrOrigin, window::XrWindow, XrActive, XrLocal
+    handedness::{Handedness, LeftHanded, RightHanded}, head::XrEye, render::{CopyDestination, CopyView, FlipView},space::XrOrigin, window::XrWindow, XrActive, XrLocal
 };
 use web_sys::XrView;
 use wgpu::TextureUsages;
@@ -16,7 +15,6 @@ use crate::{
     WebXrFrame,
 };
 
-pub(crate) const FRAMEBUFFER_HANDLE: ManualTextureViewHandle = ManualTextureViewHandle(5724242);
 const TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
 
 pub(crate) fn update_xr_cameras(
@@ -65,7 +63,7 @@ pub(crate) fn update_xr_cameras(
         (With<XrWindow>, With<XrLocal>, Without<XrEye>),
     >,
     render_device: Res<RenderDevice>,
-    mut texture_views: ResMut<ManualTextureViews>,
+    mut images: ResMut<Assets<Image>>,
     mut commands: Commands,
 ) {
     if !origin.is_empty() {
@@ -86,6 +84,21 @@ pub(crate) fn update_xr_cameras(
                             //Update framebuffer:
 
                             let framebuffer: web_sys::WebGlFramebuffer = framebuffer.into();
+
+                            let texture_descriptor = wgpu::TextureDescriptor {
+                                label: Some("webxr framebuffer (color)"),
+                                size: wgpu::Extent3d {
+                                    width: base_layer.framebuffer_width(),
+                                    height: base_layer.framebuffer_height(),
+                                    depth_or_array_layers: 1,
+                                },
+                                mip_level_count: 1,
+                                sample_count: 1,
+                                dimension: wgpu::TextureDimension::D2,
+                                format: TEXTURE_FORMAT,
+                                view_formats: &[TEXTURE_FORMAT],
+                                usage: TextureUsages::COPY_DST,
+                            };
 
                             let texture = unsafe {
                                 render_device
@@ -112,24 +125,11 @@ pub(crate) fn update_xr_cameras(
                                             drop_guard: None,
                                             is_cubemap: false,
                                         },
-                                        &wgpu::TextureDescriptor {
-                                            label: Some("webxr framebuffer (color)"),
-                                            size: wgpu::Extent3d {
-                                                width: base_layer.framebuffer_width(),
-                                                height: base_layer.framebuffer_height(),
-                                                depth_or_array_layers: 1,
-                                            },
-                                            mip_level_count: 1,
-                                            sample_count: 1,
-                                            dimension: wgpu::TextureDimension::D2,
-                                            format: TEXTURE_FORMAT,
-                                            view_formats: &[TEXTURE_FORMAT],
-                                            usage: TextureUsages::RENDER_ATTACHMENT
-                                                | TextureUsages::TEXTURE_BINDING
-                                                | TextureUsages::COPY_SRC,
-                                        },
+                                        &texture_descriptor.clone(),
                                     )
                             };
+
+                            let texture = Texture::from(texture);
 
                             // let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
                             //     label: Some("webxr_framebuffer_color"),
@@ -141,19 +141,20 @@ pub(crate) fn update_xr_cameras(
                             //     base_array_layer: 0,
                             //     array_layer_count: Some(1),
                             // });
-                            let texture_view =
-                                texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-                            texture_views.insert(
-                                FRAMEBUFFER_HANDLE,
-                                ManualTextureView::with_default_format(
-                                    texture_view.into(),
-                                    UVec2 {
-                                        x: base_layer.framebuffer_width(),
-                                        y: base_layer.framebuffer_height(),
-                                    },
-                                ),
-                            );
+                            // let texture_view =
+                            //     texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+                            // texture_views.insert(
+                            //     FRAMEBUFFER_HANDLE,
+                            //     ManualTextureView::with_default_format(
+                            //         texture_view.into(),
+                            //         UVec2 {
+                            //             x: base_layer.framebuffer_width(),
+                            //             y: base_layer.framebuffer_height(),
+                            //         },
+                            //     ),
+                            // );
 
                             let views: Vec<XrView> = views.iter().map(|view| view.into()).collect();
 
@@ -196,19 +197,14 @@ pub(crate) fn update_xr_cameras(
                                             active.0 = true;
                                             projection.update_matrix(view.projection_matrix());
                                         } else {
+                                            let mut copy_view = CopyView::default();
+                                            copy_view.push(CopyDestination(texture.clone(), UVec2::new(viewport.x() as u32, viewport.y() as u32)));
                                             let mut eye = commands
                                                 .spawn((
                                                     Camera3dBundle {
-                                                        // TODO: What is msaa_writeback?
                                                         camera: Camera {
-                                                            viewport: Some(Viewport{
-                                                                physical_position: UVec2 { x: viewport.x() as u32, y: viewport.y() as u32 },
-                                                                physical_size: UVec2 { x: viewport.width() as u32, y: viewport.height() as u32},
-                                                                ..default()
-                                                            }),
-                                                            target: bevy::render::camera::RenderTarget::TextureView(FRAMEBUFFER_HANDLE),
+                                                            target: bevy::render::camera::RenderTarget::Image(images.add(Image{texture_descriptor: texture_descriptor.clone().into(), ..default()})),
                                                             order: i as isize,
-                                                            
                                                             ..default()
                                                         },
                                                         camera_3d: Camera3d{
@@ -227,7 +223,8 @@ pub(crate) fn update_xr_cameras(
                                                         ..default()
                                                     },
                                                     WebXrProjection::from(view.projection_matrix()),
-                                                    //PostProcessFlipY,
+                                                    FlipView::Y,
+                                                    copy_view,
                                                     XrEye(eye_left_index),
                                                     LeftHanded,
                                                     Handedness::Left,
@@ -270,17 +267,14 @@ pub(crate) fn update_xr_cameras(
                                             active.0 = true;
                                             projection.update_matrix(view.projection_matrix());
                                         } else {
+                                            let mut copy_view = CopyView::default();
+                                            copy_view.push(CopyDestination(texture.clone(), UVec2::new(viewport.x() as u32, viewport.y() as u32)));
                                             let mut eye = commands
                                                 .spawn((
                                                     Camera3dBundle {
                                                         // TODO: What is msaa_writeback?
                                                         camera: Camera {
-                                                            viewport: Some(Viewport{
-                                                                physical_position: UVec2 { x: viewport.x() as u32, y: viewport.y() as u32 },
-                                                                physical_size: UVec2 { x: viewport.width() as u32, y: viewport.height() as u32},
-                                                                ..default()
-                                                            }),
-                                                            target: bevy::render::camera::RenderTarget::TextureView(FRAMEBUFFER_HANDLE),
+                                                            target: bevy::render::camera::RenderTarget::Image(images.add(Image{texture_descriptor: texture_descriptor.clone().into(), ..default()})),
                                                             order: i as isize,
                                                             ..default()
                                                         },
@@ -300,7 +294,8 @@ pub(crate) fn update_xr_cameras(
                                                         ..default()
                                                     },
                                                     WebXrProjection::from(view.projection_matrix()),
-                                                    PostProcessFlipY,
+                                                    FlipView::Y,
+                                                    copy_view,
                                                     XrEye(eye_right_index),
                                                     RightHanded,
                                                     Handedness::Right,
@@ -343,17 +338,30 @@ pub(crate) fn update_xr_cameras(
                                             active.0 = true;
                                             projection.update_matrix(view.projection_matrix());
                                         } else {
+                                            let mut copy_view = CopyView::default();
+                                            copy_view.push(CopyDestination(texture.clone(), UVec2::new(viewport.x() as u32, viewport.y() as u32)));
+                                            let texture_descriptor = wgpu::TextureDescriptor {
+                                                label: Some("window"),
+                                                size: wgpu::Extent3d {
+                                                    width: viewport.width() as u32,
+                                                    height: viewport.height() as u32,
+                                                    depth_or_array_layers: 1,
+                                                },
+                                                mip_level_count: 1,
+                                                sample_count: 1,
+                                                dimension: wgpu::TextureDimension::D2,
+                                                format: TEXTURE_FORMAT,
+                                                view_formats: &[TEXTURE_FORMAT],
+                                                usage: TextureUsages::RENDER_ATTACHMENT
+                                                | TextureUsages::TEXTURE_BINDING|
+                                                TextureUsages::COPY_SRC,
+                                            };
                                             let mut window = commands
                                                 .spawn((
                                                     Camera3dBundle {
                                                         // TODO: What is msaa_writeback?
                                                         camera: Camera {
-                                                            viewport: Some(Viewport{
-                                                                physical_position: UVec2 { x: viewport.x() as u32, y: viewport.y() as u32 },
-                                                                physical_size: UVec2 { x: viewport.width() as u32, y: viewport.height() as u32},
-                                                                ..default()
-                                                            }),
-                                                            target: bevy::render::camera::RenderTarget::TextureView(FRAMEBUFFER_HANDLE),
+                                                            target: bevy::render::camera::RenderTarget::Image(images.add(Image{texture_descriptor: texture_descriptor.into(), ..default()})),
                                                             order: i as isize,
                                                             
                                                             ..default()
@@ -374,7 +382,8 @@ pub(crate) fn update_xr_cameras(
                                                         ..default()
                                                     },
                                                     WebXrProjection::from(view.projection_matrix()),
-                                                    PostProcessFlipY,
+                                                    FlipView::Y,
+                                                    copy_view,
                                                     XrWindow(window_index),
                                                     XrLocal,
                                                     XrActive(true),

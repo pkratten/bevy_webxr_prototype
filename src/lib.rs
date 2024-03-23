@@ -61,7 +61,8 @@ pub struct WebXrPlugin {
 impl Plugin for WebXrPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(CameraProjectionPlugin::<WebXrProjection>::default());
-        app.add_plugins(bevy_xr::shaders::PostProcessFlipYPlugin);
+        app.add_plugins(bevy_xr::render::FlipViewPlugin);
+        app.add_plugins(bevy_xr::render::CopyViewPlugin);
 
         app.add_plugins(bevy_xr::controller_input::XrControllerInputPlugin);
 
