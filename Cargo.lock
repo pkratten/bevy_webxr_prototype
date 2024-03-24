@@ -1015,6 +1015,7 @@ dependencies = [
  "futures",
  "glow",
  "js-sys",
+ "raw-window-handle",
  "thiserror",
  "wasm-bindgen",
  "wasm-bindgen-futures",

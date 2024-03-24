@@ -2,7 +2,12 @@
 
 use std::f32::consts::PI;
 
-use bevy::{log::LogPlugin, prelude::*};
+use bevy::{
+    log::LogPlugin,
+    prelude::*,
+    window::{PrimaryWindow, RawHandleWrapper},
+    winit::WinitPlugin,
+};
 use bevy_webxr::{error::WebXrError, WebXrPlugin, WebXrSettings};
 use bevy_xr::{
     pointer::{LeftHanded, RightHanded},
@@ -18,7 +23,21 @@ fn main() {
 
     info!("{:?}", initialize_canvas("bevyxr"));
 
-    app.insert_resource(Msaa::Off).add_plugins(
+    // let web = raw_window_handle::WebWindowHandle::new(1);
+    // let window_handle = raw_window_handle::RawWindowHandle::Web(web);
+    // let display_handle =
+    //     raw_window_handle::RawDisplayHandle::Web(raw_window_handle::WebDisplayHandle::new());
+
+    // app.world.spawn((
+    //     RawHandleWrapper {
+    //         display_handle,
+    //         window_handle,
+    //     },
+    //     PrimaryWindow,
+    // ));
+
+    app.insert_resource(Msaa::Off);
+    app.add_plugins(
         DefaultPlugins
             .set(WindowPlugin {
                 primary_window: Some(Window {
@@ -27,7 +46,7 @@ fn main() {
                 }),
                 ..default()
             })
-            .disable::<LogPlugin>(),
+            .disable::<LogPlugin>(), // .disable::<WinitPlugin>(),
     );
 
     app.add_plugins(WebXrPlugin {
@@ -174,6 +193,8 @@ pub fn initialize_canvas(canvas: &str) -> Result<web_sys::HtmlCanvasElement, Web
             .map_err(|err| WebXrError::ElementNotCanvasElement(err))?;
         canvas_element.set_id(canvas);
         canvas_element.set_attribute(canvas, canvas).unwrap();
+        canvas_element.set_attribute("alt", "App");
+        canvas_element.set_attribute("data-raw-handle", "1");
         document
             .body()
             .ok_or(WebXrError::NoBody)?

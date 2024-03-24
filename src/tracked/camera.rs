@@ -79,12 +79,13 @@ pub(crate) fn update_xr_cameras(
                     if let Some(base_layer) =
                         frame.webxr_frame.session().render_state().base_layer()
                     {
-                        if let Ok(framebuffer) =
-                            js_sys::Reflect::get(&base_layer, &"framebuffer".into())
+                        info!("{:?}", base_layer);
+
+                        if let Some(framebuffer) = base_layer.framebuffer()
                         {
                             //Update framebuffer:
 
-                            let framebuffer: web_sys::WebGlFramebuffer = framebuffer.into();
+                            info!("{:?}", framebuffer);
 
                             let texture = unsafe {
                                 render_device
@@ -121,7 +122,7 @@ pub(crate) fn update_xr_cameras(
                                             sample_count: 1,
                                             dimension: wgpu::TextureDimension::D2,
                                             format: TEXTURE_FORMAT,
-                                            view_formats: &[TEXTURE_FORMAT],
+                                            view_formats: &[],
                                             usage: TextureUsages::RENDER_ATTACHMENT
                                                 | TextureUsages::TEXTURE_BINDING
                                                 | TextureUsages::COPY_SRC,
