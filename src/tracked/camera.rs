@@ -1,6 +1,5 @@
 use bevy::{prelude::*, render::{
-        camera::{ManualTextureView, ManualTextureViewHandle, ManualTextureViews, Viewport},
-        renderer::RenderDevice,
+        camera::{ManualTextureView, ManualTextureViewHandle, ManualTextureViews, Viewport}, render_resource::Texture, renderer::RenderDevice
     }
 };
 use bevy_xr::{
@@ -17,6 +16,11 @@ use crate::{
 
 pub(crate) const FRAMEBUFFER_HANDLE: ManualTextureViewHandle = ManualTextureViewHandle(5724242);
 const TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
+
+#[derive(Resource)]
+pub struct bTexture{
+    pub tex: Texture
+}
 
 pub(crate) fn update_xr_cameras(
     xr_frame: Option<NonSend<WebXrFrame>>,
@@ -81,7 +85,10 @@ pub(crate) fn update_xr_cameras(
                     {
                         info!("{:?}", base_layer);
 
-                        if let Some(framebuffer) = base_layer.framebuffer()
+                        let framebuffer: web_sys::WebGlFramebuffer = js_sys::Reflect::get(&base_layer, &"framebuffer".into()).unwrap().into();
+
+                        //if let Some(framebuffer) = base_layer.framebuffer()
+                        if let framebuffer = framebuffer
                         {
                             //Update framebuffer:
 
@@ -122,7 +129,7 @@ pub(crate) fn update_xr_cameras(
                                             sample_count: 1,
                                             dimension: wgpu::TextureDimension::D2,
                                             format: TEXTURE_FORMAT,
-                                            view_formats: &[],
+                                            view_formats: &[TEXTURE_FORMAT],
                                             usage: TextureUsages::RENDER_ATTACHMENT
                                                 | TextureUsages::TEXTURE_BINDING
                                                 | TextureUsages::COPY_SRC,
@@ -132,6 +139,10 @@ pub(crate) fn update_xr_cameras(
 
                             let texture_view =
                                 texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+                            let bTexture = Texture::from(texture);
+
+                            commands.insert_resource(bTexture{tex: bTexture});
 
                             texture_views.insert(
                                 FRAMEBUFFER_HANDLE,
@@ -143,6 +154,8 @@ pub(crate) fn update_xr_cameras(
                                     },
                                 ),
                             );
+
+                            //return;
 
                             let views: Vec<XrView> = views.iter().map(|view| view.into()).collect();
 

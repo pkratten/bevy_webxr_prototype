@@ -16,6 +16,8 @@ use projection::WebXrProjection;
 pub mod error;
 pub mod events;
 
+pub use tracked::camera::bTexture;
+
 mod dom_point;
 mod init;
 mod projection;

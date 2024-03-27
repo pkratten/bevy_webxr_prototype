@@ -4,11 +4,16 @@ use std::f32::consts::PI;
 
 use bevy::{
     log::LogPlugin,
+    pbr::DefaultOpaqueRendererMethod,
     prelude::*,
+    render::{
+        camera::{ManualTextureViewHandle, ManualTextureViews},
+        renderer::{RenderAdapter, RenderContext, RenderDevice, RenderQueue},
+    },
     window::{PrimaryWindow, RawHandleWrapper},
     winit::WinitPlugin,
 };
-use bevy_webxr::{error::WebXrError, WebXrPlugin, WebXrSettings};
+use bevy_webxr::{bTexture, error::WebXrError, WebXrPlugin, WebXrSettings};
 use bevy_xr::{
     pointer::{LeftHanded, RightHanded},
     space::XrOrigin,
@@ -16,6 +21,7 @@ use bevy_xr::{
 };
 use wasm_bindgen::JsCast;
 use web_sys::HtmlCanvasElement;
+use wgpu::{RenderPass, RenderPassDescriptor};
 
 fn main() {
     let mut app = App::new();
@@ -37,6 +43,8 @@ fn main() {
     // ));
 
     app.insert_resource(Msaa::Off);
+    app.insert_resource(DefaultOpaqueRendererMethod::deferred());
+
     app.add_plugins(
         DefaultPlugins
             .set(WindowPlugin {
@@ -58,6 +66,7 @@ fn main() {
     .add_systems(Startup, setup)
     .add_systems(Update, (gizmos, rotate_camera))
     .add_systems(Update, bevy_xr::systems::draw_hand_gizmos)
+    .add_systems(Update, test_framebuffer)
     .run();
 }
 
@@ -201,5 +210,49 @@ pub fn initialize_canvas(canvas: &str) -> Result<web_sys::HtmlCanvasElement, Web
             .append_child(&canvas_element)
             .map_err(|err| WebXrError::JsError(err))?;
         Ok(canvas_element)
+    }
+}
+
+pub(crate) const FRAMEBUFFER_HANDLE: ManualTextureViewHandle = ManualTextureViewHandle(5724242);
+
+fn test_framebuffer(
+    texture_views: Res<ManualTextureViews>,
+    render_device: Res<RenderDevice>,
+    render_adapter: Res<RenderAdapter>,
+    render_queue: Res<RenderQueue>,
+    texture: Option<Res<bTexture>>,
+) {
+    if let Some(texture) = texture {
+        if let Some(texture_view) = texture_views.get(&FRAMEBUFFER_HANDLE) {
+            let mut ctx =
+                RenderContext::new(render_device.clone(), render_adapter.get_info(), None);
+
+            ctx.command_encoder()
+                .begin_render_pass(&RenderPassDescriptor {
+                    label: Some("Render Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &texture_view.texture_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color {
+                                r: 0.1,
+                                g: 0.2,
+                                b: 0.3,
+                                a: 1.0,
+                            }),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                });
+
+            let test = ctx.finish();
+
+            info!("Hi!");
+
+            render_queue.submit(test.0);
+        }
     }
 }
