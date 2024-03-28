@@ -1,5 +1,7 @@
 use std::f32::consts::PI;
 
+use bevy::asset::{embedded_asset, load_internal_asset};
+use bevy::pbr::Mesh3d;
 use bevy::prelude::*;
 use bevy_webxr::WebXrPlugin;
 use bevy_xr::controller::XrController;
@@ -31,25 +33,65 @@ fn main() {
     app.add_systems(PostUpdate, balloon_events.before(balloons));
     app.add_systems(PostUpdate, balloons);
 
+    app.insert_resource(AmbientLight {
+        color: Color::WHITE,
+        brightness: 3.0,
+    });
+
     app.run();
 }
 
-fn setup(mut commands: Commands) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    // commands.spawn(SceneBundle {
+    //     scene: asset_server.load("shapes.gltf#Scene0"),
+    //     ..default()
+    // });
+
     commands.spawn(PointLightBundle {
         point_light: PointLight {
-            shadows_enabled: true,
+            color: Color::rgb(0.67, 0.85, 1.0),
+            intensity: 100000.0,
+            radius: 20.0,
+            shadows_enabled: false,
             ..default()
         },
-        transform: Transform::from_xyz(4.0, 8.0, 4.0),
+        transform: Transform::from_xyz(8.0, 8.0, 8.0),
         ..default()
     });
 
     commands.spawn(PointLightBundle {
         point_light: PointLight {
-            shadows_enabled: true,
+            color: Color::rgb(1.0, 0.83, 0.67),
+            intensity: 100000.0,
+            radius: 20.0,
+            shadows_enabled: false,
             ..default()
         },
-        transform: Transform::from_xyz(-4.0, 8.0, -4.0),
+        transform: Transform::from_xyz(-8.0, 8.0, 8.0),
+        ..default()
+    });
+
+    commands.spawn(PointLightBundle {
+        point_light: PointLight {
+            color: Color::rgb(0.87, 0.67, 1.0),
+            intensity: 100000.0,
+            radius: 20.0,
+            shadows_enabled: false,
+            ..default()
+        },
+        transform: Transform::from_xyz(-8.0, -8.0, -8.0),
+        ..default()
+    });
+
+    commands.spawn(PointLightBundle {
+        point_light: PointLight {
+            color: Color::rgb(0.72, 1.0, 0.67),
+            intensity: 100000.0,
+            radius: 20.0,
+            shadows_enabled: false,
+            ..default()
+        },
+        transform: Transform::from_xyz(-8.0, -8.0, -8.0),
         ..default()
     });
 }

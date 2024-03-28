@@ -10,7 +10,7 @@ exclude = ["crates/*"]
 
 [dependencies]
 bevy = { version = "0.12.1", features = ["webgl2"] }
-bevy_xr = { path = "../bevy_xr" }
+bevy_xr = { git = "https://github.com/pkratten/bevy_xr_prototype" }
 
 wgpu-hal = { version = "0.17.2", features = ["gles"] }
 wgpu = "0.17.1"
@@ -64,7 +64,7 @@ web-sys = { version = "0.3.61", features = [
 ] }
 futures = "0.3.26"
 js-sys = "0.3"
-wasm-bindgen = "0.2.87"
+wasm-bindgen = "0.2.92"
 wasm-bindgen-futures = "0.4"
 
 
